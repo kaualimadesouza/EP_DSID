@@ -1,0 +1,5 @@
+# EP - Desenvolvimento de Sistemas de Informação Distribuídos
+
+## Tema: Simulação de AGVs em um Sistema de Estoque Automatizado
+
+Nosso projeto consiste em simular AGVs (Automated Guided Vehicles) operando em um sistema de estoque 100% automatizado, onde os robôs navegam em um grid NxN sem colisões, coordenando seus movimentos de forma totalmente distribuída. A comunicação entre os AGVs será feita via um broker pub/sub, e para garantir que dois robôs nunca ocupem a mesma célula simultaneamente, implementaremos um algoritmo de exclusão mútua distribuída, com relógios lógicos para ordenação e desempate de requisições concorrentes. Além disso, os AGVs utilizarão algoritmos de competição (tipo eleição) para decidir qual robô assume cada pedido de coleta no estoque. Dessa forma, o projeto aborda conceitos centrais da disciplina de Sistemas Distribuídos como: comunicação assíncrona via publish/subscribe, ordenação de eventos com relógios lógicos, exclusão mútua distribuída e coordenação descentralizada sem um nó central de controle.
