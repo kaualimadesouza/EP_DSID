@@ -282,7 +282,7 @@ A Figura~\ref{fig:seq-normal} ilustra o cen\'ario em que n\~ao h\'a disputa pela
 
 \subsection{Fluxo Com Conten\c{c}\~ao (Mesma C\'elula)}
 
-Quando dois carrinhos disputam a mesma c\'elula simultaneamente, o algoritmo de Ricart-Agrawala resolve o conflito: o agente com menor \textit{timestamp} de Lamport obt\'em prioridade. Em caso de empate, o menor identificador de processo vence. O agente preterido enfileira a requisi\c{c}\~ao e aguarda a libera\c{c}\~ao do recurso para tentar novamente. A Figura~\ref{fig:seq-conflito} ilustra esse cen\'ario.
+Quando dois carrinhos disputam a mesma c\'elula simultaneamente, o algoritmo de exclus\~ao m\'utua resolve o conflito: o agente com menor \textit{timestamp} l\'ogico obt\'em prioridade. Em caso de empate, o menor identificador de processo vence. O agente preterido enfileira a requisi\c{c}\~ao e aguarda a libera\c{c}\~ao do recurso para tentar novamente. A Figura~\ref{fig:seq-conflito} ilustra esse cen\'ario.
 
 \end{multicols}
 
@@ -326,7 +326,7 @@ Quando dois carrinhos disputam a mesma c\'elula simultaneamente, o algoritmo de 
     % B retries
     \draw[msg, purple!70] (10,-10.5) -- node[above, font=\scriptsize] {\texttt{lock\_request [3,3] (ts=14)}} (5,-11);
 \end{tikzpicture}
-\caption{Diagrama de sequ\^encia --- resolu\c{c}\~ao de conflito via Ricart-Agrawala}
+\caption{Diagrama de sequ\^encia --- resolu\c{c}\~ao de conflito via exclus\~ao m\'utua distribu\'ida}
 \label{fig:seq-conflito}
 \end{figure}
 
@@ -429,9 +429,9 @@ Esse mecanismo garante que a atribui\c{c}\~ao de tarefas \'e \textbf{aut\^onoma 
     \node[topic] (t3) at (-2,-0.5) {carrinhos/\{id\}/heartbeat};
 
     % Agents
-    \node[agent] (ca) at (-5.5, -4) {Carrinho A\\{\scriptsize Navega\c{c}\~ao + Lamport + Locks}};
-    \node[agent] (cb) at (0, -4) {Carrinho B\\{\scriptsize Navega\c{c}\~ao + Lamport + Locks}};
-    \node[agent] (cc) at (5.5, -4) {Carrinho C\\{\scriptsize Navega\c{c}\~ao + Lamport + Locks}};
+    \node[agent] (ca) at (-5.5, -4) {Carrinho A\\{\scriptsize Navega\c{c}\~ao + Rel\'ogio + Locks + Elei\c{c}\~ao}};
+    \node[agent] (cb) at (0, -4) {Carrinho B\\{\scriptsize Navega\c{c}\~ao + Rel\'ogio + Locks + Elei\c{c}\~ao}};
+    \node[agent] (cc) at (5.5, -4) {Carrinho C\\{\scriptsize Navega\c{c}\~ao + Rel\'ogio + Locks + Elei\c{c}\~ao}};
 
     % Connections
     \draw[conn] (ca.north) -- node[left, font=\scriptsize\itshape, text=black!60] {pub/sub} ($(brk.south west)+(1,0)$);
