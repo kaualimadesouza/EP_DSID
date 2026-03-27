@@ -1,72 +1,88 @@
-# Coordenacao Distribuida de Agentes Autonomos com Exclusao Mutua via Broker Pub/Sub
+# Coordenação Distribuída de Agentes Autônomos com Exclusão Mútua via Broker Pub/Sub
 
-## EP - Desenvolvimento de Sistemas de Informacao Distribuidos
+## Índice
 
-Carrinhos autonomos navegam em um grid NxN sem colisoes. Cada carrinho coordena seus movimentos com os demais via um **broker pub/sub** (a definir), usando um **algoritmo de exclusao mutua distribuida** (a definir) com relogios logicos para desempate. Alem da movimentacao, o sistema utiliza um mecanismo de **eleicao distribuida** para determinar qual carrinho atendera cada novo pedido que surge no grid: quando um pedido e publicado, os carrinhos disponiveis disputam entre si atraves de um processo de eleicao, e o vencedor assume a tarefa.
+- [Contexto do Projeto](#ep---desenvolvimento-de-sistemas-de-informação-distribuídos): disciplina, escopo e visão geral do sistema
+- [Protocolo de Operação](#como-funciona): como os carrinhos se coordenam
+  - [Coordenação de Movimento](#movimentação): lock de células e navegação no grid
+  - [Disputa por Pedidos via Eleição](#eleição-para-atribuição-de-pedidos): como os agentes competem para atender tarefas
+- [Stack Tecnológico](#tecnologias): linguagem, broker e algoritmos candidatos
+- [Arquitetura do Sistema](#arquitetura): estrutura de comunicação e componentes
+  - [Canais de Comunicação do Broker](#tópicos-do-broker): hierarquia de tópicos pub/sub
+  - [Módulos Internos de Cada Agente](#componentes-de-cada-carrinho): diagrama de componentes
+  - [Fluxo Sem Contenção](#fluxo-normal-sem-conflito): sequência quando não há disputa por célula
+  - [Resolução de Conflito](#conflito-mesma-célula): sequência quando dois agentes disputam a mesma célula
+  - [Eleição para Atribuição de Pedido](#eleição-distribuída-disputa-por-pedido): sequência da disputa entre candidatos
+  - [Topologia Geral](#visão-geral): diagrama de visão geral do sistema
+  - [Garantias do Sistema](#propriedades-garantidas): safety, liveness, ordenação e tolerância a falhas
 
-> **Nota:** O broker pub/sub e o algoritmo de exclusao mutua ainda serao definidos. Candidatos em avaliacao:
+---
+
+## EP - Desenvolvimento de Sistemas de Informação Distribuídos
+
+Carrinhos autônomos navegam em um grid NxN sem colisões. Cada carrinho coordena seus movimentos com os demais via um **broker pub/sub** (a definir), usando um **algoritmo de exclusão mútua distribuída** (a definir) com relógios lógicos para desempate. Além da movimentação, o sistema utiliza um mecanismo de **eleição distribuída** para determinar qual carrinho atenderá cada novo pedido que surge no grid: quando um pedido é publicado, os carrinhos disponíveis disputam entre si através de um processo de eleição, e o vencedor assume a tarefa.
+
+> **Nota:** O broker pub/sub e o algoritmo de exclusão mútua ainda serão definidos. Candidatos em avaliação:
 >
-> | Decisao | Candidatos |
+> | Decisão | Candidatos |
 > |---------|-----------|
 > | Broker | MQTT (Mosquitto), RabbitMQ, Redis Pub/Sub, ZeroMQ |
-> | Exclusao Mutua | Ricart-Agrawala, Maekawa, Token Ring, Lamport |
-> | Relogio Logico | Lamport, Vetorial |
->
-> Os exemplos abaixo usam MQTT e Ricart-Agrawala como ilustracao, mas a arquitetura e independente dessas escolhas.
+> | Exclusão Mútua | Ricart-Agrawala, Maekawa, Token Ring, Lamport |
+> | Relógio Lógico | Lamport, Vetorial |
 
 ## Como funciona
 
-### Movimentacao
+### Movimentação
 
-1. Carrinho quer se mover para a celula `[x,y]`
-2. Publica um `lock_request` com seu timestamp logico
-3. Os outros carrinhos respondem: aprovam se nao querem a mesma celula, ou cedem prioridade ao menor timestamp
-4. Com todas as aprovacoes, o carrinho se move e libera o lock
+1. Carrinho quer se mover para a célula `[x,y]`
+2. Publica um `lock_request` com seu timestamp lógico
+3. Os outros carrinhos respondem: aprovam se não querem a mesma célula, ou cedem prioridade ao menor timestamp
+4. Com todas as aprovações, o carrinho se move e libera o lock
 
-### Eleicao para atribuicao de pedidos
+### Eleição para atribuição de pedidos
 
-1. Um novo pedido e publicado no topico `pedidos/novo`, contendo a celula de origem `[x,y]` e um identificador unico
-2. Cada carrinho disponivel calcula sua **metrica de aptidao** (ex: distancia Manhattan ate o pedido, carga atual, ou combinacao ponderada)
-3. Cada candidato publica sua metrica no topico `pedidos/{id}/candidatura`, dentro de uma janela de tempo
-4. Apos a janela, cada carrinho compara as metricas recebidas. O agente com a **menor metrica** (mais apto) vence. Empate: menor ID de processo
-5. O vencedor publica confirmacao em `pedidos/{id}/eleito` e navega ate a celula do pedido
+1. Um novo pedido é publicado no tópico `pedidos/novo`, contendo a célula de origem `[x,y]` e um identificador único
+2. Cada carrinho disponível calcula sua **métrica de aptidão**
+3. Cada candidato publica sua métrica no tópico `pedidos/{id}/candidatura`, dentro de uma janela de tempo
+4. Após a janela, cada carrinho compara as métricas recebidas. O agente com a **menor métrica** (mais apto) vence. Empate: menor ID de processo
+5. O vencedor publica confirmação em `pedidos/{id}/eleito` e navega até a célula do pedido
 
 ## Tecnologias
 
 | Componente | Tecnologia |
 |---|---|
-| Comunicacao | Broker Pub/Sub (a definir) |
-| Linguagem | Python |
-| Sincronizacao | Relogio Logico (a definir) |
-| Exclusao Mutua | Algoritmo distribuido (a definir) |
-| Eleicao Distribuida | Algoritmo baseado em metrica (distancia/carga) |
+| Comunicação | Broker Pub/Sub (a definir) |
+| Linguagem | A definir (Python ou Java) |
+| Sincronização | Relógio Lógico (a definir) |
+| Exclusão Mútua | Algoritmo distribuído (a definir) |
+| Eleição Distribuída | Algoritmo baseado em métrica (distância/carga) |
 
 ## Arquitetura
 
-### Topicos do Broker
+### Tópicos do Broker
 
-> Os nomes de topicos abaixo sao ilustrativos (estilo MQTT). A estrutura sera adaptada ao broker escolhido.
+> Os nomes de tópicos abaixo são ilustrativos. A estrutura será adaptada ao broker escolhido.
 
-| Topico | Descricao |
+| Tópico | Descrição |
 |--------|-----------|
-| `carrinhos/{id}/posicao` | Broadcast da posicao atual |
+| `carrinhos/{id}/posicao` | Broadcast da posição atual |
 | `carrinhos/{id}/heartbeat` | Sinal de vida (detecta falhas) |
-| `grid/{x}/{y}/lock_request` | Pedido de reserva de celula |
-| `grid/{x}/{y}/lock_response` | Aprovacao/negacao do lock |
-| `grid/{x}/{y}/lock_release` | Liberacao da celula |
+| `grid/{x}/{y}/lock_request` | Pedido de reserva de célula |
+| `grid/{x}/{y}/lock_response` | Aprovação/negação do lock |
+| `grid/{x}/{y}/lock_release` | Liberação da célula |
 | `pedidos/novo` | Novo pedido publicado no grid |
 | `pedidos/{id}/candidatura` | Candidatura de um carrinho ao pedido |
-| `pedidos/{id}/eleito` | Resultado da eleicao (vencedor) |
+| `pedidos/{id}/eleito` | Resultado da eleição (vencedor) |
 
 ### Componentes de cada carrinho
 
 ```mermaid
 graph LR
-    NAV["Navegacao"] -->|"quer mover"| LOCK["Gerenciador de Locks"]
-    LOCK -->|"incrementa"| LAMP["Relogio Logico"]
+    NAV["Navegação"] -->|"quer mover"| LOCK["Gerenciador de Locks"]
+    LOCK -->|"incrementa"| LAMP["Relógio Lógico"]
     LOCK -->|"pub/sub"| BROKER["Cliente Broker"]
     LOCK -->|"aprovado"| NAV
-    NAV -->|"atualiza"| POS["Estado (posicao)"]
+    NAV -->|"atualiza"| POS["Estado (posição)"]
     POS -->|"publica"| BROKER
 ```
 
@@ -80,16 +96,16 @@ sequenceDiagram
 
     A->>Broker: lock_request [2,3] (ts=5)
     Broker->>B: lock_request de A
-    Note over B: Nao quer [2,3]
+    Note over B: Não disputa [2,3]
     B->>Broker: lock_response (granted)
     Broker->>A: aprovado
     Note over A: Move para [2,3]
     A->>Broker: lock_release [2,3]
 ```
 
-### Conflito (mesma celula)
+### Conflito (mesma célula)
 
-Quando dois carrinhos querem a mesma celula, o menor timestamp logico tem prioridade. O perdedor aguarda a liberacao e tenta novamente.
+Quando dois carrinhos querem a mesma célula, o menor timestamp lógico tem prioridade. O perdedor aguarda a liberação e tenta novamente.
 
 ```mermaid
 sequenceDiagram
@@ -107,13 +123,13 @@ sequenceDiagram
     Note over A: Move para [3,3]
     A->>Broker: lock_release [3,3]
 
-    Note over B: Celula livre, tenta novamente
+    Note over B: Célula livre, tenta novamente
     B->>Broker: lock_request [3,3] (ts=14)
 ```
 
-### Eleicao distribuida (disputa por pedido)
+### Eleição distribuída (disputa por pedido)
 
-Quando um novo pedido surge, os carrinhos disputam entre si para ver quem o atende. Cada um publica sua metrica de aptidao e o mais apto vence.
+Quando um novo pedido surge, os carrinhos disputam entre si para ver quem o atende. Cada um publica sua métrica de aptidão e o mais apto vence.
 
 ```mermaid
 sequenceDiagram
@@ -139,7 +155,7 @@ sequenceDiagram
     Broker->>B: broadcast candidaturas
     Broker->>C: broadcast candidaturas
 
-    Note over A: d=3 e menor, eu venci!
+    Note over A: d=3 é menor, eu venci!
     Note over B: d=3 < d=7, A venceu
     Note over C: d=3 < d=5, A venceu
 
@@ -147,10 +163,10 @@ sequenceDiagram
     Broker->>B: eleito = A
     Broker->>C: eleito = A
 
-    Note over A: Navega ate [4,2]
+    Note over A: Navega até [4,2]
 ```
 
-### Visao geral
+### Visão geral
 
 ```mermaid
 graph TB
@@ -164,15 +180,15 @@ graph TB
     end
 
     subgraph A["Carrinho A"]
-        A1["Navegacao + Relogio Logico + Locks + Eleicao"]
+        A1["Navegação + Relógio Lógico + Locks + Eleição"]
     end
 
     subgraph B["Carrinho B"]
-        B1["Navegacao + Relogio Logico + Locks + Eleicao"]
+        B1["Navegação + Relógio Lógico + Locks + Eleição"]
     end
 
     subgraph C["Carrinho C"]
-        C1["Navegacao + Relogio Logico + Locks + Eleicao"]
+        C1["Navegação + Relógio Lógico + Locks + Eleição"]
     end
 
     A1 <-->|pub/sub| Broker
@@ -182,8 +198,8 @@ graph TB
 
 ### Propriedades garantidas
 
-- **Seguranca (safety):** no maximo um carrinho ocupa cada celula em qualquer instante
-- **Vivacidade (liveness):** todo carrinho que solicita acesso a uma celula eventualmente obtem permissao
-- **Ordenacao causal:** os relogios logicos garantem uma ordenacao total compativel com a causalidade dos eventos
-- **Distribuicao autonoma de tarefas:** o mecanismo de eleicao garante que pedidos sao atribuidos ao agente mais apto sem intervencao central
-- **Deteccao de falhas:** o mecanismo de heartbeat permite identificar agentes inativos e evitar deadlocks
+- **Segurança (safety):** no máximo um carrinho ocupa cada célula em qualquer instante
+- **Vivacidade (liveness):** todo carrinho que solicita acesso a uma célula eventualmente obtém permissão
+- **Ordenação causal:** os relógios lógicos garantem uma ordenação total compatível com a causalidade dos eventos
+- **Distribuição autônoma de tarefas:** o mecanismo de eleição garante que pedidos são atribuídos ao agente mais apto sem intervenção central
+- **Detecção de falhas:** o mecanismo de heartbeat permite identificar agentes inativos e evitar deadlocks

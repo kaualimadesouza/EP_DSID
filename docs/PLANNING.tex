@@ -117,7 +117,6 @@ Rel\'ogio L\'ogico & Lamport, Vetorial \\ \hline
 \end{minipage}
 \vspace{0.3em}
 
-\noindent Os exemplos a seguir utilizam MQTT e Ricart-Agrawala como ilustra\c{c}\~ao, mas a arquitetura \'e independente dessas escolhas.
 
 \section{Introdu\c{c}\~ao}
 
@@ -154,7 +153,7 @@ A Tabela~\ref{tab:tecnologias} apresenta o \textit{stack} tecnol\'ogico adotado 
 \hline
 \textbf{Componente} & \textbf{Tecnologia} \\ \hline
 Comunica\c{c}\~ao & Broker Pub/Sub (a definir) \\ \hline
-Linguagem & Python \\ \hline
+Linguagem & A definir (Python ou Java) \\ \hline
 Sincroniza\c{c}\~ao & Rel\'ogio L\'ogico (a definir) \\ \hline
 Exclus\~ao M\'utua & Algoritmo distribu\'ido (a definir) \\ \hline
 Elei\c{c}\~ao Distribu\'ida & Algoritmo baseado em m\'etrica (dist\^ancia/carga) \\ \hline
@@ -165,7 +164,7 @@ Elei\c{c}\~ao Distribu\'ida & Algoritmo baseado em m\'etrica (dist\^ancia/carga)
 
 \subsection{T\'opicos do Broker}
 
-A comunica\c{c}\~ao entre os agentes \'e estruturada hierarquicamente nos t\'opicos descritos na Tabela~\ref{tab:topicos}. Essa organiza\c{c}\~ao permite que cada carrinho se inscreva seletivamente nos t\'opicos relevantes, minimizando o tr\'afego desnecess\'ario. Os nomes s\~ao ilustrativos (estilo MQTT) e ser\~ao adaptados ao broker escolhido.
+A comunica\c{c}\~ao entre os agentes \'e estruturada hierarquicamente nos t\'opicos descritos na Tabela~\ref{tab:topicos}. Essa organiza\c{c}\~ao permite que cada carrinho se inscreva seletivamente nos t\'opicos relevantes, minimizando o tr\'afego desnecess\'ario. Os nomes s\~ao ilustrativos e ser\~ao adaptados ao broker escolhido.
 
 \noindent
 \begin{minipage}{\columnwidth}
@@ -264,7 +263,7 @@ A Figura~\ref{fig:seq-normal} ilustra o cen\'ario em que n\~ao h\'a disputa pela
     \draw[msg, blue!70] (0,-1.5) -- node[above, font=\scriptsize] {\texttt{lock\_request [2,3] (ts=5)}} (5,-2);
     \draw[msg, blue!70] (5,-2.5) -- node[above, font=\scriptsize] {\texttt{lock\_request de A}} (10,-3);
 
-    \node[note] at (10,-3.8) {N\~ao quer $[2,3]$};
+    \node[note] at (10,-3.8) {N\~ao disputa $[2,3]$};
 
     \draw[msg, green!60!black] (10,-4.5) -- node[above, font=\scriptsize] {\texttt{lock\_response (granted)}} (5,-5);
     \draw[msg, green!60!black] (5,-5.5) -- node[above, font=\scriptsize] {aprovado} (0,-6);
