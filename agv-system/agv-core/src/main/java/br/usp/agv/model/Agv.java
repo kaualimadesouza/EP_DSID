@@ -8,18 +8,37 @@ public class Agv {
     private Order currentOrder;    // null se ocioso
 
     public Agv(String agvId, Position initialPosition) {
-        this.agvId           = agvId;
+        this.agvId = agvId;
         this.currentPosition = initialPosition;
-        this.status          = AgvStatus.IDLE;
-        this.currentOrder    = null;
+        this.status = AgvStatus.IDLE;
+        this.currentOrder = null;
     }
 
-    public String getAgvId()              { return agvId; }
-    public Position getCurrentPosition()  { return currentPosition; }
-    public AgvStatus getStatus()          { return status; }
-    public Order getCurrentOrder()        { return currentOrder; }
+    public String getAgvId() {
+        return agvId;
+    }
 
-    public void setCurrentPosition(Position p) { this.currentPosition = p; }
-    public void setStatus(AgvStatus s)          { this.status = s; }
-    public void setCurrentOrder(Order o)        { this.currentOrder = o; }
+    public Position getCurrentPosition() {
+        return currentPosition;
+    }
+
+    public void setCurrentPosition(Position p) {
+        this.currentPosition = p;
+    }
+
+    public AgvStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AgvStatus s) {
+        this.status = s;
+    }
+
+    public Order getCurrentOrder() {
+        return currentOrder;
+    }
+
+    public void setCurrentOrder(Order o) {
+        this.currentOrder = o;
+    }
 }
