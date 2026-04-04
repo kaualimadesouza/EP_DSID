@@ -1,23 +1,48 @@
-<?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>br.usp.agv</groupId>
+        <artifactId>agv-system</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
 
-  <parent>
-    <groupId>br.usp.agv</groupId>
-    <artifactId>agv-system</artifactId>
-    <version>1.0-SNAPSHOT</version>
-  </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>agv-adapters</artifactId>
+    <packaging>jar</packaging>
 
-  <modelVersion>4.0.0</modelVersion>
-  <artifactId>agv-adapters</artifactId>
-  <packaging>jar</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>br.usp.agv</groupId>
+            <artifactId>agv-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
-  <dependencies>
-      <dependency>
-          <groupId>br.usp.agv</groupId>
-          <artifactId>agv-core</artifactId>
-          <version>1.0-SNAPSHOT</version>
-      </dependency>
-  </dependencies>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>1.5.2</version>
+            <scope>compile</scope>
+        </dependency>
 
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

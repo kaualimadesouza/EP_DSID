@@ -4,13 +4,8 @@ import java.util.List;
 
 public record Position(int x, int y) {
 
-    public Position {
-        if (x < 0 || y < 0)
-            throw new IllegalArgumentException("Posição inválida: (%d,%d)".formatted(x, y));
-    }
-
     public int manhattanDistanceTo(Position other) {
-        return Math.abs(this.x - other.y) + Math.abs(this.x - other.y);
+        return Math.abs(this.x - other.x) + Math.abs(this.y - other.y);
     }
 
     public List<Position> orthogonalNeighbors() {
