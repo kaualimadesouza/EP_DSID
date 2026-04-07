@@ -27,7 +27,7 @@ class ElectionIntegrationTest {
         Agv agv = new Agv("agv-alpha", new Position(0, 0));
 
         ElectionUseCase election = new ElectionUseCase(agv, pathfinder, bus);
-        AgvController controller = new AgvController(agv, election);
+        AgvController controller = new AgvController(agv, election, null);
 
         Order order = new Order("ORD-1", new Position(3, 4), new Position(8, 8));
 

@@ -36,9 +36,9 @@ public class ElectionUseCase {
         return a.agvId().compareTo(b.agvId()) < 0 ? a : b;
     }
 
-    public void startElection(Order order) {
+    public Candidacy startElection(Order order) {
         if (agv.getStatus() != AgvStatus.IDLE) {
-            return; // ocupado, não participa
+            return null; // ocupado, não participa
         }
 
         int score = calculateScore(order);
@@ -56,6 +56,8 @@ public class ElectionUseCase {
         agv.setStatus(AgvStatus.ELECTING);
 
         broadcastCandidacy(myCandidacy);
+        
+        return myCandidacy;
     }
 
     public void onElectionRequest(AgvMessage message) {
