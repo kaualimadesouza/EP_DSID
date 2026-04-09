@@ -2,7 +2,10 @@ name: Deploy slides para o GitHub Pages
 
 on:
   push:
-    branches: [main] # Ajuste para master se for o caso do seu repo
+    branches: [ main ]
+    paths:
+      - 'showcase/agv-system-overview/**'
+
 
 permissions:
   contents: read
