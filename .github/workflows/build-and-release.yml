@@ -1,0 +1,53 @@
+name: Build and Release JARs
+
+on:
+  push:
+    tags:
+      - 'v*' # Dispara quando você cria uma tag (ex: git tag v1.0.0)
+  workflow_dispatch: # Permite rodar manualmente no painel do GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: |
+          cd agv-system
+          mvn clean package -DskipTests
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            agv-system/infra/target/agv-node.jar
+            agv-system/infra/target/visualizer.jar
+            agv-system/infra/target/generator.jar
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifacts (for manual runs)
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: agv-system-jars
+          path: |
+            agv-system/infra/target/agv-node.jar
+            agv-system/infra/target/visualizer.jar
+            agv-system/infra/target/generator.jar
