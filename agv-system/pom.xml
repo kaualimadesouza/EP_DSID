@@ -20,11 +20,17 @@
         <maven.compiler.target>21</maven.compiler.target>
         <junit.version>5.10.2</junit.version>
         <jgrapht.version>1.5.2</jgrapht.version>
+        <jackson.version>2.17.0</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.jgrapht</groupId>
                 <artifactId>jgrapht-core</artifactId>

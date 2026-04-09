@@ -25,7 +25,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     
     private List<Agv> agvs = new ArrayList<>();
     private List<Order> orders = new ArrayList<>();
-    private br.usp.agv.model.Route activeRoute = null;
+    private final Map<String, br.usp.agv.model.Route> activeRoutes = new HashMap<>();
     
     // Posições visuais para interpolação (x, y em pixels flutuantes)
     private final Map<String, Point2D.Double> visualPositions = new HashMap<>();
@@ -50,7 +50,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 
                 drawGrid(g2);
                 drawOrders(g2);
-                drawRoute(g2);
+                drawRoutes(g2);
                 drawAgvs(g2);
             }
         };
@@ -96,19 +96,45 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         }
     }
 
-    private void drawRoute(Graphics2D g) {
-        if (activeRoute == null || activeRoute.waypoints().isEmpty()) return;
-        
-        g.setColor(new Color(0, 150, 255, 80));
+    private void drawRoutes(Graphics2D g) {
         g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         
-        for (int i = 0; i < activeRoute.waypoints().size() - 1; i++) {
-            Position from = activeRoute.waypoints().get(i);
-            Position to = activeRoute.waypoints().get(i + 1);
-            g.drawLine(
-                from.y() * cellSize + cellSize / 2, from.x() * cellSize + cellSize / 2,
-                to.y() * cellSize + cellSize / 2, to.x() * cellSize + cellSize / 2
-            );
+        for (Map.Entry<String, br.usp.agv.model.Route> entry : activeRoutes.entrySet()) {
+            String agvId = entry.getKey();
+            br.usp.agv.model.Route route = entry.getValue();
+            if (route == null || route.waypoints().isEmpty()) continue;
+            
+            // Encontrar posição atual do AGV para saber de onde começar a desenhar
+            Agv currentAgv = agvs.stream()
+                .filter(a -> a.getAgvId().equals(agvId))
+                .findFirst()
+                .orElse(null);
+            
+            Position currentPos = (currentAgv != null) ? currentAgv.getCurrentPosition() : null;
+            
+            // Encontrar o índice da posição atual na lista de waypoints
+            int startIndex = 0;
+            if (currentPos != null) {
+                for (int i = 0; i < route.waypoints().size(); i++) {
+                    if (route.waypoints().get(i).equals(currentPos)) {
+                        startIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            // Cor leve baseada no ID do AGV
+            int hash = agvId.hashCode();
+            g.setColor(new Color((hash & 0xFF0000) >> 16, (hash & 0x00FF00) >> 8, hash & 0x0000FF, 80));
+            
+            for (int i = startIndex; i < route.waypoints().size() - 1; i++) {
+                Position from = route.waypoints().get(i);
+                Position to = route.waypoints().get(i + 1);
+                g.drawLine(
+                    from.y() * cellSize + cellSize / 2, from.x() * cellSize + cellSize / 2,
+                    to.y() * cellSize + cellSize / 2, to.x() * cellSize + cellSize / 2
+                );
+            }
         }
     }
 
@@ -124,15 +150,24 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     private void drawOrders(Graphics2D g) {
         for (Order order : orders) {
-            // Pickup - Verde
+            // Pickup - Verde (Círculo preenchido)
             g.setColor(new Color(46, 204, 113));
             Position p = order.pickup();
-            g.fillRoundRect(p.y() * cellSize + 10, p.x() * cellSize + 10, cellSize - 20, cellSize - 20, 10, 10);
+            g.fillOval(p.y() * cellSize + 8, p.x() * cellSize + 8, cellSize - 16, cellSize - 16);
+            g.setColor(Color.BLACK);
+            g.drawOval(p.y() * cellSize + 8, p.x() * cellSize + 8, cellSize - 16, cellSize - 16);
             
-            // Delivery - Vermelho
+            // Delivery - Vermelho (Quadrado oco com X)
             g.setColor(new Color(231, 76, 60));
             Position d = order.delivery();
-            g.drawRoundRect(d.y() * cellSize + 5, d.x() * cellSize + 5, cellSize - 10, cellSize - 10, 10, 10);
+            int dx = d.y() * cellSize + 5;
+            int dy = d.x() * cellSize + 5;
+            int size = cellSize - 10;
+            g.setStroke(new BasicStroke(3));
+            g.drawRect(dx, dy, size, size);
+            g.drawLine(dx, dy, dx + size, dy + size);
+            g.drawLine(dx + size, dy, dx, dy + size);
+            g.setStroke(new BasicStroke(1));
         }
     }
 
@@ -149,7 +184,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onRouteCalculated(String agvId, br.usp.agv.model.Route route) {
-        this.activeRoute = route;
+        this.activeRoutes.put(agvId, route);
         repaint();
     }
 

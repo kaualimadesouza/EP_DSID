@@ -34,7 +34,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>br.usp.agv.bootstrap.Main</mainClass>
+                            <mainClass>br.usp.agv.bootstrap.SimulationMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
