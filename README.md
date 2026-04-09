@@ -25,7 +25,7 @@ Para detalhes sobre decisões arquiteturais, algoritmos utilizados e funcionamen
 
 ## 🚦 Como Executar
 
-Baixe os arquivos disponíveis em Releases aqui no Github.
+Baixe os arquivos disponíveis em Releases aqui no Github: https://github.com/kaualimadesouza/EP_DSID/releases.
 Certifique-se de ter o Java 21+ instalado.
 
 ```bash
