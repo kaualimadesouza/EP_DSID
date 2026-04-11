@@ -1,12 +1,7 @@
 package br.usp.agv.usecase;
 
-import br.usp.agv.model.Agv;
-import br.usp.agv.model.Position;
-import br.usp.agv.model.Route;
-import br.usp.agv.model.AgvMessage;
-import br.usp.agv.model.MessageType;
+import br.usp.agv.model.*;
 import br.usp.agv.ports.outbound.MessageBusPort;
-import br.usp.agv.ports.outbound.WorldObserverPort;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,12 +9,10 @@ import java.util.Map;
 public class MovementUseCase {
 
     private final Agv agv;
-    private final WorldObserverPort observer;
     private final MessageBusPort messageBus;
 
-    public MovementUseCase(Agv agv, WorldObserverPort observer, MessageBusPort messageBus) {
+    public MovementUseCase(Agv agv, MessageBusPort messageBus) {
         this.agv = agv;
-        this.observer = observer;
         this.messageBus = messageBus;
     }
 
@@ -34,11 +27,6 @@ public class MovementUseCase {
                     agv.setCurrentPosition(p);
                     
                     broadcastHeartbeat();
-
-                    if (observer != null) {
-                        System.out.println("AGV " + agv.getAgvId() + "moveu: (" + p.x() + "," + p.y() + ")");
-                        observer.onAgvMoved(agv.getAgvId(), p);
-                    }
                 }
                 System.out.println("AGV " + agv.getAgvId() + " concluiu rota.");
                 agv.setStatus(br.usp.agv.model.AgvStatus.IDLE);

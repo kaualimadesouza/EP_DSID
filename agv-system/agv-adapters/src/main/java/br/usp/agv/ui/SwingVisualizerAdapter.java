@@ -35,7 +35,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         this.rows = rows;
         this.cols = cols;
         
-        setTitle("AGV System Visualizer (Smooth)");
+        setTitle("Visualizador Sistema de AGVs");
         setSize(cols * cellSize + 20, rows * cellSize + 40);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);

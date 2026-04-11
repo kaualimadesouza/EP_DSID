@@ -1,11 +1,7 @@
 package br.usp.agv.usecase;
 
-import br.usp.agv.model.Agv;
-import br.usp.agv.model.AgvMessage;
-import br.usp.agv.model.MessageType;
-import br.usp.agv.model.Order;
+import br.usp.agv.model.*;
 import br.usp.agv.ports.outbound.MessageBusPort;
-import br.usp.agv.ports.outbound.WorldObserverPort;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,17 +11,15 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
     private final Agv agv;
     private final ElectionUseCase election;
     private final MovementUseCase movement;
-    private final WorldObserverPort observer;
     private final MessageBusPort messageBus;
     private Thread heartbeatThread;
 
-    public AgvController(Agv agv, ElectionUseCase election, MovementUseCase movement, WorldObserverPort observer, MessageBusPort messageBus) {
+    public AgvController(Agv agv, ElectionUseCase election, MovementUseCase movement, MessageBusPort messageBus) {
         this.agv = agv;
         this.election = election;
         this.movement = movement;
-        this.observer = observer;
         this.messageBus = messageBus;
-        
+
         this.election.setElectionListener(this);
     }
 
@@ -35,7 +29,7 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     broadcastHeartbeat();
-                    Thread.sleep(1000); // Reduzi para 1s para descoberta mais rápida
+                    Thread.sleep(1000); // Heartbeat a cada 1Hz
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -55,9 +49,6 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
 
     @Override
     public void onNewOrder(Order order) {
-        if (observer != null) {
-            observer.onOrderCreated(order);
-        }
         election.startElection(order);
     }
 
@@ -66,12 +57,9 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
         if (agv.getStatus() != br.usp.agv.model.AgvStatus.ELECTING) return;
         
         System.out.println("AGV " + agv.getAgvId() + " venceu a eleição reativamente para " + orderId);
-        if (observer != null) {
-            observer.onRouteCalculated(agv.getAgvId(), wonRoute);
-        }
-        if (movement != null) {
-            movement.executeRoute(wonRoute);
-        }
+        if (movement != null) movement.executeRoute(wonRoute);
+
+        broadcastRouteClaimed(wonRoute);
     }
 
     @Override
@@ -87,5 +75,14 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
             }
             case HEARTBEAT -> election.onHeartbeatReceived(message.senderId());
         }
+    }
+
+    private void broadcastRouteClaimed(Route wonRoute) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("agvId", agv.getAgvId());
+        payload.put("route", wonRoute);
+
+        AgvMessage msg = new AgvMessage(agv.getAgvId(), MessageType.ROUTE_CLAIMED, payload);
+        messageBus.broadcast(msg);
     }
 }

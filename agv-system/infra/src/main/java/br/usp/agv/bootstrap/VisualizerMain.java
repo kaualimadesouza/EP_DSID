@@ -40,7 +40,7 @@ public class VisualizerMain {
                     knownOrders.put(id, order);
                     ui.onOrderCreated(order);
                 }
- else if (!senderId.equals("VISUALIZER")) {
+                else if (!senderId.equals("VISUALIZER")) {
                     if (msg.type() == MessageType.HEARTBEAT) {
                         Agv agv = knownAgvs.computeIfAbsent(senderId, id -> new Agv(id, new Position(0,0)));
                         Object posObj = msg.payload().get("position");

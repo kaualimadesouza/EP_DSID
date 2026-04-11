@@ -2,20 +2,22 @@ package br.usp.agv.bootstrap;
 
 import br.usp.agv.messaging.UdpMessageBusAdapter;
 import br.usp.agv.model.Agv;
+import br.usp.agv.model.MessageType;
+import br.usp.agv.model.Order;
 import br.usp.agv.model.Position;
 import br.usp.agv.pathfinder.AStarPathfinderAdapter;
 import br.usp.agv.pathfinder.GridGraphAdapter;
 import br.usp.agv.usecase.AgvController;
 import br.usp.agv.usecase.ElectionUseCase;
 import br.usp.agv.usecase.MovementUseCase;
-
-import br.usp.agv.model.MessageType;
-import br.usp.agv.model.Order;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Collections;
 import java.util.Scanner;
 
+/**
+ * Nó único AGV
+ */
 public class AgvNodeMain {
     public static void main(String[] args) {
         String agvId = args.length > 0 ? args[0] : "AGV-" + System.currentTimeMillis() % 1000;
@@ -32,14 +34,10 @@ public class AgvNodeMain {
         // Core
         Agv agv = new Agv(agvId, new Position(startX, startY));
         
-        // Observer que encaminha eventos para a rede (P2P)
-        br.usp.agv.ports.outbound.WorldObserverPort networkObserver = 
-                new br.usp.agv.messaging.NetworkObserverAdapter(agvId, network);
-
         ElectionUseCase election = new ElectionUseCase(agv, pathfinder, network);
-        MovementUseCase movement = new MovementUseCase(agv, networkObserver, network); 
+        MovementUseCase movement = new MovementUseCase(agv, network);
         
-        AgvController controller = new AgvController(agv, election, movement, networkObserver, network);
+        AgvController controller = new AgvController(agv, election, movement, network);
 
         // Se inscreve para ouvir mensagens da rede
         network.subscribe("agv-system", (msg) -> {

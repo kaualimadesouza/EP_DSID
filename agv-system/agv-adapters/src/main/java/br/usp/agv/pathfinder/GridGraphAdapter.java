@@ -63,12 +63,4 @@ public class GridGraphAdapter implements WorldMapPort {
     public boolean isTraversable(Position p) {
         return inBounds(p) && !staticObstacles.contains(p);
     }
-
-    public int getRows() {
-        return rows;
-    }
-
-    public int getCols() {
-        return cols;
-    }
 }

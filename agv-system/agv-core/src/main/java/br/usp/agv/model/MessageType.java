@@ -12,11 +12,6 @@ public enum MessageType {
     ROUTE_CLAIMED,      // "reservei esse caminho (manda a rota)"
     ROUTE_RELEASED,     // "terminei, caminho livre"
 
-    // Exclusão mútua - Fase 2 (Pub/Sub)
-    LOCK_REQUEST,
-    LOCK_OK,
-    LOCK_RELEASE,
-
-    // Gestão - Fase 2
+    // Conecta lista de peers, keep-alive
     HEARTBEAT
 }

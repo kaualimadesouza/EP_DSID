@@ -76,9 +76,9 @@ public class SimulationMain {
         modelList.add(agv);
         
         ElectionUseCase election = new ElectionUseCase(agv, pathfinder, bus);
-        MovementUseCase movement = new MovementUseCase(agv, ui, bus);
+        MovementUseCase movement = new MovementUseCase(agv, bus);
         
-        AgvController controller = new AgvController(agv, election, movement, ui, bus);
+        AgvController controller = new AgvController(agv, election, movement, bus);
         
         // Conecta o AGV ao bus para ouvir outros AGVs
         bus.subscribe("agv-system", controller::onMessageReceived);

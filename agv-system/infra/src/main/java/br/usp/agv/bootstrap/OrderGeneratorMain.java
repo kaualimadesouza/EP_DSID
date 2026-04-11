@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * Entra manualmente com pedidos por console -- sem implementação de broker (fase 2)
+ */
 public class OrderGeneratorMain {
     public static void main(String[] args) {
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();

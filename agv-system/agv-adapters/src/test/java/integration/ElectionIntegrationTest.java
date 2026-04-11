@@ -11,8 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class ElectionIntegrationTest {
@@ -29,11 +28,12 @@ class ElectionIntegrationTest {
 
         ElectionUseCase election = new ElectionUseCase(agv, pathfinder, bus);
         // Passamos null para o movement para simplificar o teste
-        AgvController controller = new AgvController(agv, election, null, null, bus);
+        AgvController controller = new AgvController(agv, election, null, bus);
 
         Order order = new Order("ORD-1", new Position(3, 4), new Position(8, 8));
 
         // Act
+        controller.start();
         controller.onNewOrder(order);
 
         // Assert
@@ -41,7 +41,7 @@ class ElectionIntegrationTest {
         assertTrue(agv.getStatus() == AgvStatus.ELECTING || agv.getStatus() == AgvStatus.IDLE);
 
         // Verificamos se as mensagens foram enviadas (Heartbeat do loop + Election Request)
-        assertTrue(bus.sent.size() >= 1, "Deveria ter enviado ao menos a mensagem de eleição");
+        assertFalse(bus.sent.isEmpty(), "Deveria ter enviado ao menos a mensagem de eleição");
         
         AgvMessage electionMsg = bus.sent.stream()
                 .filter(m -> m.type() == MessageType.ELECTION_REQUEST)

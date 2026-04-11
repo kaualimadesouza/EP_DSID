@@ -57,6 +57,7 @@ public class ElectionUseCase {
 
         cleanDeadPeers();
         int score = calculateScore(order);
+        // calcula rotas sem obstáculos por enquanto
         Route route = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), Set.of(), agv.getAgvId());
 
         Candidacy myCandidacy = new Candidacy(agv.getAgvId(), order.orderId(), score, route);
@@ -68,6 +69,7 @@ public class ElectionUseCase {
 
         // Dá um pequeno tempo (assíncrono) para as mensagens de outros candidatos
         // cruzarem o barramento antes da primeira verificação de vitória.
+        // TODO isso eh necessario?
         new Thread(() -> {
             try {
                 Thread.sleep(500);
@@ -134,6 +136,7 @@ public class ElectionUseCase {
         return true;
     }
 
+    // TODO verificar se broadcast concede ou mandar para todos
     private void sendConcede(String toAgvId, String orderId) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("orderId", orderId);
@@ -153,12 +156,4 @@ public class ElectionUseCase {
         messageBus.broadcast(msg);
     }
 
-    public Route getWonRoute(String orderId) {
-        if (hasWon(orderId)) {
-            return knownCandidacies.get(orderId).route();
-        }
-        return null;
-    }
-
-    public record Candidacy(String agvId, String orderId, int score, Route route) { }
 }
