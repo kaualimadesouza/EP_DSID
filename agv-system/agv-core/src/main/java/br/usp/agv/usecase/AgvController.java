@@ -1,10 +1,6 @@
 package br.usp.agv.usecase;
 
 import br.usp.agv.model.*;
-import br.usp.agv.ports.outbound.MessageBusPort;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class AgvController implements br.usp.agv.ports.inbound.AgvController, ElectionUseCase.ElectionListener {
 

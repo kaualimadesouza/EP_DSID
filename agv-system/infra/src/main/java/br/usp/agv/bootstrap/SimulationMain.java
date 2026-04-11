@@ -1,5 +1,6 @@
 package br.usp.agv.bootstrap;
 
+import br.usp.agv.messaging.AgvMessageDispatcher;
 import br.usp.agv.messaging.InMemoryMessageBus;
 import br.usp.agv.model.Agv;
 import br.usp.agv.model.Order;
@@ -82,9 +83,9 @@ public class SimulationMain {
         MovementUseCase movement = new MovementUseCase(agv, broadcaster);
 
         AgvController controller = new AgvController(agv, election, movement, broadcaster);
-        // Conecta o AGV ao bus para ouvir outros AGVs
-        bus.subscribe("agv-system", controller::onMessageReceived);
-        
+        AgvMessageDispatcher dispatcher = new AgvMessageDispatcher(controller, bus);
+
+        dispatcher.start();
         controller.start();
         
         return controller;
