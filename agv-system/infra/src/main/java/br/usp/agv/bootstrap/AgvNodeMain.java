@@ -22,11 +22,13 @@ public class AgvNodeMain {
         String agvId = args.length > 0 ? args[0] : "AGV-" + System.currentTimeMillis() % 1000;
         int startX = args.length > 2 ? Integer.parseInt(args[1]) : 0;
         int startY = args.length > 2 ? Integer.parseInt(args[2]) : 0;
+        int gridWidth = args.length > 4 ? Integer.parseInt(args[3]) : 15;
+        int gridHeight = args.length > 4 ? Integer.parseInt(args[4]) : 15;
 
-        System.out.println("Iniciando Nó AGV: " + agvId + " em (" + startX + "," + startY + ")");
+        System.out.println("Iniciando Nó AGV: " + agvId + " em (" + startX + "," + startY + ") Grid: " + gridWidth + "x" + gridHeight);
 
         // Infra
-        GridGraphAdapter world = new GridGraphAdapter(15, 15, Collections.emptySet());
+        GridGraphAdapter world = new GridGraphAdapter(gridWidth, gridHeight, Collections.emptySet());
         AStarPathfinderAdapter pathfinder = new AStarPathfinderAdapter(world);
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 

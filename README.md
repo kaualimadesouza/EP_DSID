@@ -25,16 +25,40 @@ Para detalhes sobre decisões arquiteturais, algoritmos utilizados e funcionamen
 
 ## 🚦 Como Executar
 
-Baixe os arquivos disponíveis em Releases aqui no Github: https://github.com/kaualimadesouza/EP_DSID/releases.
-Certifique-se de ter o Java 21+ instalado.
+Baixe os arquivos disponíveis em [Releases](https://github.com/kaualimadesouza/EP_DSID/releases).
+Certifique-se de ter o **Java 21+** instalado.
 
-```bash
-# Para o visualizador
-java -jar visualizer.jar
-# Para um nó AGV (passando ID e posição inicial)
-java -jar agv-node.jar AGV-1 0 0
-# Para o gerador de pedidos
-java -jar generator.jar
-```
+Existem duas formas principais de rodar a simulação:
+
+### Opção 1: Interface Gerenciada (TUI - Recomendado)
+Ideal para desenvolvedores e testers que desejam uma visão unificada e depuração fácil.
+**Requisito:** `tmux` instalado (nativo no Linux/macOS).
+
+1. Coloque os arquivos `agv-node.jar`, `visualizer.jar` e `generator.jar` na mesma pasta que o script `run_tui.sh`.
+2. Dê permissão de execução: `chmod +x run_tui.sh`
+3. Execute o script:
+   ```bash
+   ./run_tui.sh
+   ```
+   *O script perguntará interativamente o número de AGVs e o tamanho do grid.*
+
+### Opção 2: Execução Manual Individual
+Ideal para rodar cada componente em terminais separados.
+
+1. **Visualizador (UI):**
+   ```bash
+   # java -jar visualizer.jar [cols] [rows]
+   java -jar visualizer.jar 15 15
+   ```
+2. **Nós AGV (Repita para cada nó):**
+   ```bash
+   # java -jar agv-node.jar [ID] [posX] [posY] [gridW] [gridH]
+   java -jar agv-node.jar AGV-1 0 0 15 15
+   ```
+3. **Gerador de Pedidos (Interativo):**
+   ```bash
+   java -jar generator.jar
+   ```
+   *No terminal do gerador, digite `/new_order <px> <py> <dx> <dy>` para criar ordens.*
 
 ---

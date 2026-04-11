@@ -13,8 +13,8 @@ public class VisualizerMain {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static void main(String[] args) {
-        int rows = 15;
-        int cols = 15;
+        int cols = args.length > 1 ? Integer.parseInt(args[0]) : 15;
+        int rows = args.length > 1 ? Integer.parseInt(args[1]) : 15;
 
         SwingVisualizerAdapter ui = new SwingVisualizerAdapter(rows, cols);
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
