@@ -7,6 +7,7 @@ import br.usp.agv.model.Position;
 import br.usp.agv.pathfinder.AStarPathfinderAdapter;
 import br.usp.agv.pathfinder.GridGraphAdapter;
 import br.usp.agv.ui.SwingVisualizerAdapter;
+import br.usp.agv.usecase.AgvBroadcaster;
 import br.usp.agv.usecase.AgvController;
 import br.usp.agv.usecase.ElectionUseCase;
 import br.usp.agv.usecase.MovementUseCase;
@@ -67,19 +68,20 @@ public class SimulationMain {
         }).start();
     }
 
-    private static AgvController createAgv(String id, Position pos, 
-                                         AStarPathfinderAdapter pathfinder, 
-                                         InMemoryMessageBus bus, 
+    private static AgvController createAgv(String id, Position pos,
+                                         AStarPathfinderAdapter pathfinder,
+                                         InMemoryMessageBus bus,
                                          SwingVisualizerAdapter ui,
                                          List<Agv> modelList) {
         Agv agv = new Agv(id, pos);
         modelList.add(agv);
-        
-        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, bus);
-        MovementUseCase movement = new MovementUseCase(agv, bus);
-        
-        AgvController controller = new AgvController(agv, election, movement, bus);
-        
+
+        AgvBroadcaster broadcaster = new AgvBroadcaster(agv, bus);
+
+        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, broadcaster);
+        MovementUseCase movement = new MovementUseCase(agv, broadcaster);
+
+        AgvController controller = new AgvController(agv, election, movement, broadcaster);
         // Conecta o AGV ao bus para ouvir outros AGVs
         bus.subscribe("agv-system", controller::onMessageReceived);
         

@@ -3,6 +3,7 @@ package integration;
 import br.usp.agv.model.*;
 import br.usp.agv.pathfinder.AStarPathfinderAdapter;
 import br.usp.agv.pathfinder.GridGraphAdapter;
+import br.usp.agv.usecase.AgvBroadcaster;
 import br.usp.agv.usecase.AgvController;
 import br.usp.agv.usecase.ElectionUseCase;
 import fakes.FakeMessageBus;
@@ -25,10 +26,11 @@ class ElectionIntegrationTest {
         FakeMessageBus bus = new FakeMessageBus();
 
         Agv agv = new Agv("agv-alpha", new Position(0, 0));
+        AgvBroadcaster broadcaster = new AgvBroadcaster(agv, bus);
 
-        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, bus);
+        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, broadcaster);
         // Passamos null para o movement para simplificar o teste
-        AgvController controller = new AgvController(agv, election, null, bus);
+        AgvController controller = new AgvController(agv, election, null, broadcaster);
 
         Order order = new Order("ORD-1", new Position(3, 4), new Position(8, 8));
 

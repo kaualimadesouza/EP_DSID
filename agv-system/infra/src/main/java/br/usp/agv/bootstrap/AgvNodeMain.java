@@ -7,6 +7,7 @@ import br.usp.agv.model.Order;
 import br.usp.agv.model.Position;
 import br.usp.agv.pathfinder.AStarPathfinderAdapter;
 import br.usp.agv.pathfinder.GridGraphAdapter;
+import br.usp.agv.usecase.AgvBroadcaster;
 import br.usp.agv.usecase.AgvController;
 import br.usp.agv.usecase.ElectionUseCase;
 import br.usp.agv.usecase.MovementUseCase;
@@ -33,12 +34,12 @@ public class AgvNodeMain {
 
         // Core
         Agv agv = new Agv(agvId, new Position(startX, startY));
-        
-        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, network);
-        MovementUseCase movement = new MovementUseCase(agv, network);
-        
-        AgvController controller = new AgvController(agv, election, movement, network);
+        AgvBroadcaster broadcaster = new AgvBroadcaster(agv, network);
 
+        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, broadcaster);
+        MovementUseCase movement = new MovementUseCase(agv, broadcaster);
+
+        AgvController controller = new AgvController(agv, election, movement, broadcaster);
         // Se inscreve para ouvir mensagens da rede
         network.subscribe("agv-system", (msg) -> {
             if (msg.type() == MessageType.NEW_ORDER) {

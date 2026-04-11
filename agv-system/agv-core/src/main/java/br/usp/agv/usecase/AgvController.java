@@ -11,14 +11,14 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
     private final Agv agv;
     private final ElectionUseCase election;
     private final MovementUseCase movement;
-    private final MessageBusPort messageBus;
+    private final AgvBroadcaster broadcaster;
     private Thread heartbeatThread;
 
-    public AgvController(Agv agv, ElectionUseCase election, MovementUseCase movement, MessageBusPort messageBus) {
+    public AgvController(Agv agv, ElectionUseCase election, MovementUseCase movement, AgvBroadcaster broadcaster) {
         this.agv = agv;
         this.election = election;
         this.movement = movement;
-        this.messageBus = messageBus;
+        this.broadcaster = broadcaster;
 
         this.election.setElectionListener(this);
     }
@@ -28,7 +28,7 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
         heartbeatThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    broadcastHeartbeat();
+                    broadcaster.broadcastHeartbeat();
                     Thread.sleep(1000); // Heartbeat a cada 1Hz
                 } catch (InterruptedException e) {
                     break;
@@ -36,15 +36,6 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
             }
         });
         heartbeatThread.start();
-    }
-
-    private void broadcastHeartbeat() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("position", agv.getCurrentPosition());
-        payload.put("status", agv.getStatus());
-
-        AgvMessage msg = new AgvMessage(agv.getAgvId(), MessageType.HEARTBEAT, payload);
-        messageBus.broadcast(msg);
     }
 
     @Override
@@ -59,7 +50,7 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
         System.out.println("AGV " + agv.getAgvId() + " venceu a eleição reativamente para " + orderId);
         if (movement != null) movement.executeRoute(wonRoute);
 
-        broadcastRouteClaimed(wonRoute);
+        broadcaster.broadcastRouteClaimed(wonRoute);
     }
 
     @Override
@@ -75,14 +66,5 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
             }
             case HEARTBEAT -> election.onHeartbeatReceived(message.senderId());
         }
-    }
-
-    private void broadcastRouteClaimed(Route wonRoute) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("agvId", agv.getAgvId());
-        payload.put("route", wonRoute);
-
-        AgvMessage msg = new AgvMessage(agv.getAgvId(), MessageType.ROUTE_CLAIMED, payload);
-        messageBus.broadcast(msg);
     }
 }

@@ -14,7 +14,7 @@ public class ElectionUseCase {
 
     private final Agv agv;
     private final PathfinderPort pathfinder;
-    private final MessageBusPort messageBus;
+    private final AgvBroadcaster broadcaster;
 
     // Peers ativos baseados em Heartbeats (agvId -> timestamp)
     private final Map<String, Long> activePeers = new ConcurrentHashMap<>();
@@ -34,10 +34,10 @@ public class ElectionUseCase {
         this.listener = listener;
     }
 
-    public ElectionUseCase(Agv agv, PathfinderPort pathfinder, MessageBusPort messageBus) {
+    public ElectionUseCase(Agv agv, PathfinderPort pathfinder, AgvBroadcaster broadcaster) {
         this.agv = agv;
         this.pathfinder = pathfinder;
-        this.messageBus = messageBus;
+        this.broadcaster = broadcaster;
     }
 
     /**
@@ -65,7 +65,7 @@ public class ElectionUseCase {
         concedesReceived.put(order.orderId(), new HashSet<>());
 
         agv.setStatus(AgvStatus.ELECTING);
-        broadcastCandidacy(myCandidacy);
+        broadcaster.broadcastCandidacy(myCandidacy.orderId(), myCandidacy.score(), myCandidacy.route());
 
         // Dá um pequeno tempo (assíncrono) para as mensagens de outros candidatos
         // cruzarem o barramento antes da primeira verificação de vitória.
@@ -91,11 +91,11 @@ public class ElectionUseCase {
 
         // Se o outro for melhor, eu desisto
         if (incomingScore < myScore || (incomingScore == myScore && senderId.compareTo(agv.getAgvId()) < 0)) {
-            sendConcede(senderId, orderId);
+            broadcaster.broadcastConcede(orderId);
             agv.setStatus(AgvStatus.IDLE);
         } else if (myScore != Integer.MAX_VALUE) {
             // Se eu for melhor, eu re-afirmo minha candidatura (Bully)
-            broadcastCandidacy(currentBest);
+            broadcaster.broadcastCandidacy(currentBest.orderId(), currentBest.score(), currentBest.route());
         }
     }
 
@@ -136,24 +136,8 @@ public class ElectionUseCase {
         return true;
     }
 
-    // TODO verificar se broadcast concede ou mandar para todos
-    private void sendConcede(String toAgvId, String orderId) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("orderId", orderId);
-        AgvMessage msg = new AgvMessage(agv.getAgvId(), MessageType.ELECTION_CONCEDE, payload);
-        messageBus.broadcast(msg);
-    }
-
     private int calculateScore(Order order) {
         return agv.getCurrentPosition().manhattanDistanceTo(order.pickup());
-    }
-
-    private void broadcastCandidacy(Candidacy candidacy) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("orderId", candidacy.orderId());
-        payload.put("score", candidacy.score());
-        AgvMessage msg = new AgvMessage(agv.getAgvId(), MessageType.ELECTION_REQUEST, payload);
-        messageBus.broadcast(msg);
     }
 
 }
