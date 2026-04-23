@@ -79,7 +79,7 @@ public class SimulationMain {
 
         AgvBroadcaster broadcaster = new AgvBroadcaster(agv, bus);
 
-        BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, pathfinder, broadcaster);
+        BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, broadcaster);
         MovementUseCase movement = new MovementUseCase(agv, broadcaster);
 
         AgvController controller = new AgvController(agv, batchAssignment, movement, pathfinder, broadcaster);

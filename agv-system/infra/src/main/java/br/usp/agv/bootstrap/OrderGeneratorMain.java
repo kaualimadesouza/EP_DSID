@@ -22,13 +22,25 @@ public class OrderGeneratorMain {
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public static void main(String[] args) {
-        UdpMessageBusAdapter network = getUdpMessageBusAdapter();
+        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
-        // Thread para re-transmitir pedidos que ainda não foram processados, simulando persistência no middleware
+        // Listener para remover pedidos concluídos (atribuídos)
+        network.subscribe("orders", message -> {
+            if (message.type() == MessageType.ROUTE_CLAIMED) {
+                String orderId = (String) message.payload().get("orderId");
+                if (orderId != null && activeOrders.remove(orderId) != null) {
+                    System.out.println("\n[BROKER] Pedido " + orderId + " confirmado e removido da fila de retransmissão.");
+                    System.out.print("> "); // Re-imprime o prompt
+                }
+            }
+        });
+
+        // Thread de re-transmissão (Simula persistência do MOM)
         scheduler.scheduleAtFixedRate(() -> {
             if (activeOrders.isEmpty()) return;
             
             for (Order order : activeOrders.values()) {
+                // Removemos o log periódico por pedido para não sujar o terminal
                 sendOrderMsg(network, order, false);
             }
         }, 10, 10, TimeUnit.SECONDS);
@@ -57,22 +69,6 @@ public class OrderGeneratorMain {
             }
             System.out.print("> ");
         }
-    }
-
-    private static UdpMessageBusAdapter getUdpMessageBusAdapter() {
-        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
-
-        // Listener para remover pedidos concluídos (atribuídos)
-        network.subscribe("orders", message -> {
-            if (message.type() == MessageType.ROUTE_CLAIMED) {
-                String orderId = (String) message.payload().get("orderId");
-                if (orderId != null && activeOrders.remove(orderId) != null) {
-                    System.out.println("\n[BROKER] Pedido " + orderId + " confirmado e removido da fila de retransmissão.");
-                    System.out.print("> "); // Re-imprime o prompt
-                }
-            }
-        });
-        return network;
     }
 
     private static void handleMultiOrder(UdpMessageBusAdapter network, String input) {

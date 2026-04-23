@@ -36,7 +36,7 @@ public class AgvNodeMain {
         Agv agv = new Agv(agvId, new Position(startX, startY));
         AgvBroadcaster broadcaster = new AgvBroadcaster(agv, network);
 
-        BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, pathfinder, broadcaster);
+        BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, broadcaster);
         MovementUseCase movement = new MovementUseCase(agv, broadcaster);
 
         AgvController controller = new AgvController(agv, batchAssignment, movement, pathfinder, broadcaster);

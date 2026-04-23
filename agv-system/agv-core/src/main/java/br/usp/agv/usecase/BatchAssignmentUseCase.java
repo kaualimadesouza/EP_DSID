@@ -1,7 +1,6 @@
 package br.usp.agv.usecase;
 
 import br.usp.agv.model.*;
-import br.usp.agv.ports.outbound.PathfinderPort;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 public class BatchAssignmentUseCase {
 
     private final Agv agv;
-    private final PathfinderPort pathfinder;
     private final AgvBroadcaster broadcaster;
 
     private final Map<String, AgvSnapshot> activePeers = new ConcurrentHashMap<>();
@@ -34,10 +32,12 @@ public class BatchAssignmentUseCase {
         this.listener = listener;
     }
 
-    public BatchAssignmentUseCase(Agv agv, PathfinderPort pathfinder, AgvBroadcaster broadcaster) {
+    public BatchAssignmentUseCase(Agv agv, AgvBroadcaster broadcaster) {
         this.agv = agv;
-        this.pathfinder = pathfinder;
         this.broadcaster = broadcaster;
+        
+        // Inicia limpeza periódica de peers inativos
+        this.scheduler.scheduleAtFixedRate(this::cleanDeadPeers, 5, 5, TimeUnit.SECONDS);
     }
 
     public void onHeartbeatReceived(String peerId, Position position, AgvStatus status) {
@@ -45,7 +45,10 @@ public class BatchAssignmentUseCase {
     }
 
     private void cleanDeadPeers() {
-        // Assume heartbeats are at 1Hz, timeout after 5s
+        long timeout = 10000; // 10 segundos sem heartbeat
+        long now = System.currentTimeMillis();
+        
+        activePeers.entrySet().removeIf(entry -> (now - entry.getValue().lastSeen()) > timeout);
     }
 
     public boolean isLeader() {
@@ -104,7 +107,6 @@ public class BatchAssignmentUseCase {
         }
 
         broadcaster.broadcastBatchAck(batch.batchId());
-        // Auto-ack for self if leader
         onBatchAck(agv.getAgvId(), batch.batchId());
     }
 
@@ -134,24 +136,7 @@ public class BatchAssignmentUseCase {
         Map<String, AgvSnapshot> states = new HashMap<>(batch.agvStates());
 
         for (Order order : orders) {
-            String bestAgvId = null;
-            int minDistance = Integer.MAX_VALUE;
-
-            for (AgvSnapshot state : states.values()) {
-                // Um AGV só é elegível se estiver IDLE no snapshot DO LOTE
-                if (state.status() == AgvStatus.IDLE) {
-                    int dist = state.position().manhattanDistanceTo(order.pickup());
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        bestAgvId = state.agvId();
-                    } else if (dist == minDistance) {
-                        // Desempate determinístico por ID
-                        if (bestAgvId == null || state.agvId().compareTo(bestAgvId) < 0) {
-                            bestAgvId = state.agvId();
-                        }
-                    }
-                }
-            }
+            String bestAgvId = getBestAgvId(order, states);
 
             if (bestAgvId != null) {
                 // Atribui pedido
@@ -162,12 +147,33 @@ public class BatchAssignmentUseCase {
                     }
                 }
                 // Atualiza estado local para próxima iteração do loop de pedidos no mesmo lote
-                AgvSnapshot old = states.get(bestAgvId);
-                states.put(bestAgvId, new AgvSnapshot(old.agvId(), old.position(), AgvStatus.MOVING));
+                states.computeIfPresent(bestAgvId, (k, old) -> new AgvSnapshot(old.agvId(), old.position(), AgvStatus.MOVING, old.lastSeen()));
             } else {
                 System.out.println("Nenhum AGV disponível para o pedido " + order.orderId() + ". Liberando para futura retransmissão.");
                 processedOrders.remove(order.orderId());
             }
         }
+    }
+
+    private static String getBestAgvId(Order order, Map<String, AgvSnapshot> states) {
+        String bestAgvId = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (AgvSnapshot state : states.values()) {
+            // Um AGV só é elegível se estiver IDLE no snapshot DO LOTE
+            if (state.status() == AgvStatus.IDLE) {
+                int dist = state.position().manhattanDistanceTo(order.pickup());
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    bestAgvId = state.agvId();
+                } else if (dist == minDistance) {
+                    // Desempate determinístico por ID
+                    if (bestAgvId == null || state.agvId().compareTo(bestAgvId) < 0) {
+                        bestAgvId = state.agvId();
+                    }
+                }
+            }
+        }
+        return bestAgvId;
     }
 }
