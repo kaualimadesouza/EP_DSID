@@ -49,9 +49,15 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 drawGrid(g2);
-                drawOrders(g2);
-                drawRoutes(g2);
-                drawAgvs(g2);
+                synchronized (orders) {
+                    drawOrders(g2);
+                }
+                synchronized (activeRoutes) {
+                    drawRoutes(g2);
+                }
+                synchronized (agvs) {
+                    drawAgvs(g2);
+                }
             }
         };
         
@@ -59,7 +65,9 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         
         // Loop de Animação (aprox 60 FPS)
         Timer timer = new Timer(16, e -> {
-            updateVisualPositions();
+            synchronized (agvs) {
+                updateVisualPositions();
+            }
             repaint();
         });
         timer.start();
@@ -178,20 +186,28 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onOrderCreated(Order order) {
-        this.orders.add(order);
+        synchronized (orders) {
+            this.orders.add(order);
+        }
         repaint();
     }
 
     @Override
     public void onRouteCalculated(String agvId, br.usp.agv.model.Route route) {
-        this.activeRoutes.put(agvId, route);
+        synchronized (activeRoutes) {
+            this.activeRoutes.put(agvId, route);
+        }
         repaint();
     }
 
     @Override
     public void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders) {
-        this.agvs = new ArrayList<>(allAgvs);
-        this.orders = new ArrayList<>(pendingOrders);
+        synchronized (agvs) {
+            this.agvs = new ArrayList<>(allAgvs);
+        }
+        synchronized (orders) {
+            this.orders = new ArrayList<>(pendingOrders);
+        }
         repaint();
     }
 }
