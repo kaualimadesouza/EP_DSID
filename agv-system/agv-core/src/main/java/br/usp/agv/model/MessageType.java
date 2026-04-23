@@ -4,9 +4,9 @@ public enum MessageType {
     // Entrada de pedido (Pub/Sub)
     NEW_ORDER,
 
-    // Eleição (ideia: tratar par a par)
-    ELECTION_REQUEST,   // "quero esse pedido, meu peso é X"
-    ELECTION_CONCEDE,   // "ok, você tem prioridade"
+    // Acordo de lote (Total Ordering)
+    BATCH_PROPOSAL,
+    BATCH_ACK,
 
     // Rotas (broadcast P2P)
     ROUTE_CLAIMED,      // "reservei esse caminho (manda a rota)"

@@ -9,18 +9,35 @@ import br.usp.agv.model.Position;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Entra manualmente com pedidos por console -- sem implementação de broker (fase 2)
+ * Entra manualmente com pedidos por console -- com implementação de broker simulado
  */
 public class OrderGeneratorMain {
+    private static final Map<String, Order> activeOrders = new ConcurrentHashMap<>();
+    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
     public static void main(String[] args) {
-        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
+        UdpMessageBusAdapter network = getUdpMessageBusAdapter();
+
+        // Thread para re-transmitir pedidos que ainda não foram processados, simulando persistência no middleware
+        scheduler.scheduleAtFixedRate(() -> {
+            if (activeOrders.isEmpty()) return;
+            
+            for (Order order : activeOrders.values()) {
+                sendOrderMsg(network, order, false);
+            }
+        }, 10, 10, TimeUnit.SECONDS);
 
         System.out.println("Gerador de pedidos iniciado.");
         System.out.println("Use: /new_order <px> <py> <dx> <dy>");
         System.out.println("Use: /multi_order <p1x> <p1y> <d1x> <d1y> [p2x p2y d2x d2y ...]");
         System.out.println("Use: /random_orders <n>");
+        System.out.print("> ");
 
         Scanner scanner = new Scanner(System.in);
         java.util.Random random = new java.util.Random();
@@ -34,8 +51,28 @@ public class OrderGeneratorMain {
                 handleMultiOrder(network, input);
             } else if (input.startsWith("/random_orders")) {
                 handleRandomOrders(network, input, random);
+            } else if (input.startsWith("/clear")) {
+                activeOrders.clear();
+                System.out.println("Fila limpa.");
             }
+            System.out.print("> ");
         }
+    }
+
+    private static UdpMessageBusAdapter getUdpMessageBusAdapter() {
+        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
+
+        // Listener para remover pedidos concluídos (atribuídos)
+        network.subscribe("orders", message -> {
+            if (message.type() == MessageType.ROUTE_CLAIMED) {
+                String orderId = (String) message.payload().get("orderId");
+                if (orderId != null && activeOrders.remove(orderId) != null) {
+                    System.out.println("\n[BROKER] Pedido " + orderId + " confirmado e removido da fila de retransmissão.");
+                    System.out.print("> "); // Re-imprime o prompt
+                }
+            }
+        });
+        return network;
     }
 
     private static void handleMultiOrder(UdpMessageBusAdapter network, String input) {
@@ -48,7 +85,7 @@ public class OrderGeneratorMain {
             }
             for (int i = 0; i < numCoords / 4; i++) {
                 int b = 1 + (i * 4);
-                sendOrder(network, Integer.parseInt(parts[b]), Integer.parseInt(parts[b+1]),
+                createAndSendOrder(network, Integer.parseInt(parts[b]), Integer.parseInt(parts[b+1]),
                         Integer.parseInt(parts[b+2]), Integer.parseInt(parts[b+3]));
             }
         } catch (Exception e) {
@@ -65,7 +102,7 @@ public class OrderGeneratorMain {
             }
             int n = Integer.parseInt(parts[1]);
             for (int i = 0; i < n; i++) {
-                sendOrder(network, rand.nextInt(15), rand.nextInt(15), rand.nextInt(15), rand.nextInt(15));
+                createAndSendOrder(network, rand.nextInt(15), rand.nextInt(15), rand.nextInt(15), rand.nextInt(15));
             }
         } catch (Exception e) {
             System.out.println("Erro: " + e.getMessage());
@@ -79,16 +116,23 @@ public class OrderGeneratorMain {
                 System.out.println("Formato inválido. Use: /new_order <px> <py> <dx> <dy>");
                 return;
             }
-            sendOrder(network, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]),
+            createAndSendOrder(network, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]),
                     Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
         } catch (Exception e) {
             System.out.println("Erro: " + e.getMessage());
         }
     }
 
-    private static void sendOrder(UdpMessageBusAdapter network, int px, int py, int dx, int dy) {
-        System.out.printf("Disparando pedido: pickup(%d,%d) -> delivery(%d,%d)%n", px, py, dx, dy);
+    private static void createAndSendOrder(UdpMessageBusAdapter network, int px, int py, int dx, int dy) {
         Order order = new Order("ORD-" + System.nanoTime(), new Position(px, py), new Position(dx, dy));
+        activeOrders.put(order.orderId(), order);
+        sendOrderMsg(network, order, true);
+    }
+
+    private static void sendOrderMsg(UdpMessageBusAdapter network, Order order, boolean verbose) {
+        if (verbose) {
+            System.out.printf("Disparando pedido: %s pickup(%s) -> delivery(%s)%n", order.orderId(), order.pickup(), order.delivery());
+        }
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("orderId", order.orderId());

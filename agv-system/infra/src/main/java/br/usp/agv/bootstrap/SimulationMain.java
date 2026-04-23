@@ -10,7 +10,7 @@ import br.usp.agv.pathfinder.GridGraphAdapter;
 import br.usp.agv.ui.SwingVisualizerAdapter;
 import br.usp.agv.usecase.AgvBroadcaster;
 import br.usp.agv.usecase.AgvController;
-import br.usp.agv.usecase.ElectionUseCase;
+import br.usp.agv.usecase.BatchAssignmentUseCase;
 import br.usp.agv.usecase.MovementUseCase;
 
 import java.util.ArrayList;
@@ -79,10 +79,10 @@ public class SimulationMain {
 
         AgvBroadcaster broadcaster = new AgvBroadcaster(agv, bus);
 
-        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, broadcaster);
+        BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, pathfinder, broadcaster);
         MovementUseCase movement = new MovementUseCase(agv, broadcaster);
 
-        AgvController controller = new AgvController(agv, election, movement, broadcaster);
+        AgvController controller = new AgvController(agv, batchAssignment, movement, pathfinder, broadcaster);
         AgvMessageDispatcher dispatcher = new AgvMessageDispatcher(controller, bus);
 
         dispatcher.start();

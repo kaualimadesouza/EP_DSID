@@ -1,7 +1,6 @@
 package br.usp.agv.messaging;
 
 import br.usp.agv.model.AgvMessage;
-import br.usp.agv.model.MessageType;
 import br.usp.agv.model.Order;
 import br.usp.agv.model.Position;
 import br.usp.agv.ports.inbound.AgvController;
@@ -10,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Adaptador de Entrada (Inbound Adapter).
- * Despacha mensagens brutas do MessageBus para métodos semânticos do AgvController.
+ * Despacha mensagens do MessageBus para o AgvController.
  */
 public class AgvMessageDispatcher {
 
@@ -28,21 +27,32 @@ public class AgvMessageDispatcher {
     }
 
     private void dispatch(AgvMessage message) {
-        if (message.type() == MessageType.NEW_ORDER) {
-            try {
-                // Converte o payload genérico para objeto de domínio
-                String id = (String) message.payload().get("orderId");
-                Position pickup = mapper.convertValue(message.payload().get("pickup"), Position.class);
-                Position delivery = mapper.convertValue(message.payload().get("delivery"), Position.class);
-                
-                Order order = new Order(id, pickup, delivery);
-                controller.onNewOrder(order);
-            } catch (Exception e) {
-                System.err.println("Erro ao processar NEW_ORDER: " + e.getMessage());
+        try {
+            switch (message.type()) {
+                case NEW_ORDER -> {
+                    String id = (String) message.payload().get("orderId");
+                    Position pickup = mapper.convertValue(message.payload().get("pickup"), Position.class);
+                    Position delivery = mapper.convertValue(message.payload().get("delivery"), Position.class);
+                    controller.onNewOrder(new Order(id, pickup, delivery));
+                }
+                case BATCH_PROPOSAL -> {
+                    br.usp.agv.model.Batch batch = mapper.convertValue(message.payload().get("batch"), br.usp.agv.model.Batch.class);
+                    controller.onBatchProposal(batch);
+                }
+                case BATCH_ACK -> {
+                    String batchId = (String) message.payload().get("batchId");
+                    controller.onBatchAck(message.senderId(), batchId);
+                }
+                case HEARTBEAT -> {
+                    Position pos = mapper.convertValue(message.payload().get("position"), Position.class);
+                    br.usp.agv.model.AgvStatus status = br.usp.agv.model.AgvStatus.valueOf(message.payload().get("status").toString());
+                    controller.onHeartbeatReceived(message.senderId(), pos, status);
+                }
+                default -> System.out.println("Mensagem não suportada: " + message.type());
             }
-        } else {
-            // Outras mensagens (Heartbeat, Election, etc) vão para processamento genérico no core
-            controller.onMessageReceived(message);
+        } catch (Exception e) {
+            System.err.println("Erro ao despachar mensagem " + message.type() + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

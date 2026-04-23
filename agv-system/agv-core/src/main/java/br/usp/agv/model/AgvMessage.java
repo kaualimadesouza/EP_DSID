@@ -15,32 +15,29 @@ public record AgvMessage(String senderId, MessageType type, Map<String, Object> 
         );
     }
 
-    public static AgvMessage candidacy(Agv agv, String orderId, int score, Route route) {
+    public static AgvMessage batchProposal(String senderId, Batch batch) {
         return new AgvMessage(
-                agv.getAgvId(),
-                MessageType.ELECTION_REQUEST,
-                Map.of(
-                        "orderId", orderId,
-                        "score", score,
-                        "route", route
-                )
+                senderId,
+                MessageType.BATCH_PROPOSAL,
+                Map.of("batch", batch)
         );
     }
 
-    public static AgvMessage concede(Agv agv, String orderId) {
+    public static AgvMessage batchAck(String senderId, String batchId) {
         return new AgvMessage(
-                agv.getAgvId(),
-                MessageType.ELECTION_CONCEDE,
-                Map.of("orderId", orderId)
+                senderId,
+                MessageType.BATCH_ACK,
+                Map.of("batchId", batchId)
         );
     }
 
-    public static AgvMessage routeClaimed(Agv agv, Route route) {
+    public static AgvMessage routeClaimed(Agv agv, String orderId, Route route) {
         return new AgvMessage(
                 agv.getAgvId(),
                 MessageType.ROUTE_CLAIMED,
                 Map.of(
                         "agvId", agv.getAgvId(),
+                        "orderId", orderId,
                         "route", route
                 )
         );

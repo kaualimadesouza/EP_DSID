@@ -1,22 +1,26 @@
 package br.usp.agv.usecase;
 
 import br.usp.agv.model.*;
+import br.usp.agv.ports.outbound.PathfinderPort;
 
-public class AgvController implements br.usp.agv.ports.inbound.AgvController, ElectionUseCase.ElectionListener {
+public class AgvController implements br.usp.agv.ports.inbound.AgvController, BatchAssignmentUseCase.BatchListener {
 
     private final Agv agv;
-    private final ElectionUseCase election;
+    private final BatchAssignmentUseCase batchAssignment;
     private final MovementUseCase movement;
+    private final PathfinderPort pathfinder;
     private final AgvBroadcaster broadcaster;
     private Thread heartbeatThread;
 
-    public AgvController(Agv agv, ElectionUseCase election, MovementUseCase movement, AgvBroadcaster broadcaster) {
+    public AgvController(Agv agv, BatchAssignmentUseCase batchAssignment, MovementUseCase movement, 
+                         PathfinderPort pathfinder, AgvBroadcaster broadcaster) {
         this.agv = agv;
-        this.election = election;
+        this.batchAssignment = batchAssignment;
         this.movement = movement;
+        this.pathfinder = pathfinder;
         this.broadcaster = broadcaster;
 
-        this.election.setElectionListener(this);
+        this.batchAssignment.setListener(this);
     }
 
     public void start() {
@@ -36,31 +40,36 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, El
 
     @Override
     public void onNewOrder(Order order) {
-        election.startElection(order);
+        batchAssignment.onNewOrder(order);
     }
 
     @Override
-    public void onElectionWon(String orderId, br.usp.agv.model.Route wonRoute) {
-        if (agv.getStatus() != br.usp.agv.model.AgvStatus.ELECTING) return;
+    public void onBatchProposal(Batch batch) {
+        batchAssignment.onBatchProposal(batch);
+    }
+
+    @Override
+    public void onBatchAck(String senderId, String batchId) {
+        batchAssignment.onBatchAck(senderId, batchId);
+    }
+
+    @Override
+    public void onHeartbeatReceived(String senderId, Position position, AgvStatus status) {
+        batchAssignment.onHeartbeatReceived(senderId, position, status);
+    }
+
+    @Override
+    public void onOrderAssigned(Order order) {
+        System.out.println("AGV " + agv.getAgvId() + " recebeu atribuição para " + order.orderId());
         
-        System.out.println("AGV " + agv.getAgvId() + " venceu a eleição reativamente para " + orderId);
-        if (movement != null) movement.executeRoute(wonRoute);
+        // Calcula as duas partes da viagem
+        Route toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), java.util.Set.of(), agv.getAgvId());
+        Route toDelivery = pathfinder.calculateRoute(order.pickup(), order.delivery(), java.util.Set.of(), agv.getAgvId());
 
-        broadcaster.broadcastRouteClaimed(wonRoute);
-    }
-
-    @Override
-    public void onMessageReceived(AgvMessage message) {
-        if (message.senderId().equals(agv.getAgvId())) return;
-
-        switch (message.type()) {
-            case ELECTION_REQUEST -> election.onElectionRequest(message);
-            case ELECTION_CONCEDE -> {
-                String orderId = (String) message.payload().get("orderId");
-                System.out.println("ELECTION_CONCEDE" + message.payload());
-                election.onConcedeReceived(message.senderId(), orderId);
-            }
-            case HEARTBEAT -> election.onHeartbeatReceived(message.senderId());
+        if (movement != null) {
+            movement.executeOrder(order, toPickup, toDelivery);
         }
+
+        broadcaster.broadcastRouteClaimed(order.orderId(), toPickup);
     }
 }

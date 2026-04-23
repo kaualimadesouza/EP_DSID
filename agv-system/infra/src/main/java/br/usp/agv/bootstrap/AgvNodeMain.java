@@ -8,7 +8,7 @@ import br.usp.agv.pathfinder.AStarPathfinderAdapter;
 import br.usp.agv.pathfinder.GridGraphAdapter;
 import br.usp.agv.usecase.AgvBroadcaster;
 import br.usp.agv.usecase.AgvController;
-import br.usp.agv.usecase.ElectionUseCase;
+import br.usp.agv.usecase.BatchAssignmentUseCase;
 import br.usp.agv.usecase.MovementUseCase;
 
 import java.util.Collections;
@@ -36,10 +36,10 @@ public class AgvNodeMain {
         Agv agv = new Agv(agvId, new Position(startX, startY));
         AgvBroadcaster broadcaster = new AgvBroadcaster(agv, network);
 
-        ElectionUseCase election = new ElectionUseCase(agv, pathfinder, broadcaster);
+        BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, pathfinder, broadcaster);
         MovementUseCase movement = new MovementUseCase(agv, broadcaster);
 
-        AgvController controller = new AgvController(agv, election, movement, broadcaster);
+        AgvController controller = new AgvController(agv, batchAssignment, movement, pathfinder, broadcaster);
         AgvMessageDispatcher dispatcher = new AgvMessageDispatcher(controller, network);
 
         dispatcher.start();
