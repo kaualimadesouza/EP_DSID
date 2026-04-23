@@ -20,11 +20,45 @@ public class VisualizerMain {
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
         Map<String, Agv> knownAgvs = new ConcurrentHashMap<>();
+        Map<String, Long> lastSeen = new ConcurrentHashMap<>(); // Timestamp do último sinal
         Map<String, Order> knownOrders = new ConcurrentHashMap<>();
+
+        // Thread para limpar AGVs inativos (Timeout de 5 segundos)
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                    long now = System.currentTimeMillis();
+                    boolean changed = false;
+                    
+                    for (String agvId : lastSeen.keySet()) {
+                        if (now - lastSeen.get(agvId) > 5000) { // 5 segundos sem sinal
+                            System.out.println("Visualizer: AGV " + agvId + " removido por inatividade.");
+                            knownAgvs.remove(agvId);
+                            lastSeen.remove(agvId);
+                            changed = true;
+                        }
+                    }
+                    
+                    if (changed) {
+                        ui.onSystemStateChanged(
+                            new ArrayList<>(knownAgvs.values()), 
+                            new ArrayList<>(knownOrders.values())
+                        );
+                    }
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        }, "AGV-Cleanup-Thread").start();
 
         network.subscribe("agv-system", (AgvMessage msg) -> {
             try {
                 String senderId = msg.senderId();
+                if (senderId.equals("VISUALIZER")) return;
+
+                // Atualiza timestamp de atividade para qualquer mensagem recebida do AGV
+                lastSeen.put(senderId, System.currentTimeMillis());
                 
                 if (msg.type() == MessageType.NEW_ORDER) {
                     System.out.println("Visualizer: Recebeu NEW_ORDER de " + senderId);
