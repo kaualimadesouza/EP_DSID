@@ -42,4 +42,20 @@ public record AgvMessage(String senderId, MessageType type, Map<String, Object> 
                 )
         );
     }
+
+    public static AgvMessage routeReleased(String agvId) {
+        return new AgvMessage(
+                agvId,
+                MessageType.ROUTE_RELEASED,
+                Map.of("agvId", agvId)
+        );
+    }
+
+    public static AgvMessage orderCompleted(String orderId) {
+        return new AgvMessage(
+                "SYSTEM",
+                MessageType.ORDER_COMPLETED,
+                Map.of("orderId", orderId)
+        );
+    }
 }

@@ -2,6 +2,7 @@ package br.usp.agv.usecase;
 
 import br.usp.agv.model.*;
 import br.usp.agv.ports.outbound.PathfinderPort;
+import br.usp.agv.ports.outbound.WorldObserverPort;
 
 public class AgvController implements br.usp.agv.ports.inbound.AgvController, BatchAssignmentUseCase.BatchListener {
 
@@ -11,6 +12,8 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
     private final PathfinderPort pathfinder;
     private final AgvBroadcaster broadcaster;
     private Thread heartbeatThread;
+    
+    private WorldObserverPort observer;
 
     public AgvController(Agv agv, BatchAssignmentUseCase batchAssignment, MovementUseCase movement, 
                          PathfinderPort pathfinder, AgvBroadcaster broadcaster) {
@@ -21,6 +24,10 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
         this.broadcaster = broadcaster;
 
         this.batchAssignment.setListener(this);
+    }
+
+    public void setObserver(WorldObserverPort observer) {
+        this.observer = observer;
     }
 
     public void start() {
@@ -70,6 +77,29 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
             movement.executeOrder(order, toPickup, toDelivery);
         }
 
-        broadcaster.broadcastRouteClaimed(order.orderId(), toPickup);
+        if (observer != null) {
+            observer.onRouteCalculated(agv.getAgvId(), toPickup);
+        }
+    }
+
+    @Override
+    public void onRouteClaimed(String agvId, String orderId, Route route) {
+        if (observer != null) {
+            observer.onRouteCalculated(agvId, route);
+        }
+    }
+
+    @Override
+    public void onRouteReleased(String agvId) {
+        if (observer != null) {
+            observer.onRouteReleased(agvId);
+        }
+    }
+
+    @Override
+    public void onOrderCompleted(String orderId) {
+        if (observer != null) {
+            observer.onOrderCompleted(orderId);
+        }
     }
 }

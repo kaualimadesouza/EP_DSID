@@ -51,6 +51,14 @@ public class VisualizerMain {
                         br.usp.agv.model.Route route = mapper.convertValue(msg.payload().get("route"), br.usp.agv.model.Route.class);
                         System.out.println("Visualizer: Recebeu ROTA de " + senderId);
                         ui.onRouteCalculated(senderId, route);
+                    } else if (msg.type() == MessageType.ROUTE_RELEASED) {
+                        System.out.println("Visualizer: ROTA LIBERADA por " + senderId);
+                        ui.onRouteReleased(senderId);
+                    } else if (msg.type() == MessageType.ORDER_COMPLETED) {
+                        String orderId = (String) msg.payload().get("orderId");
+                        System.out.println("Visualizer: PEDIDO CONCLUÍDO: " + orderId);
+                        knownOrders.remove(orderId);
+                        ui.onOrderCompleted(orderId);
                     }
                 }
                 

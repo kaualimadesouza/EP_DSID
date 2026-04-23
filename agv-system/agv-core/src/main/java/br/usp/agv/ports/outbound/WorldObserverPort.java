@@ -13,5 +13,7 @@ public interface WorldObserverPort {
     void onAgvMoved(String agvId, Position newPosition);
     void onOrderCreated(Order order);
     void onRouteCalculated(String agvId, br.usp.agv.model.Route route);
+    void onRouteReleased(String agvId);
+    void onOrderCompleted(String orderId);
     void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders);
 }

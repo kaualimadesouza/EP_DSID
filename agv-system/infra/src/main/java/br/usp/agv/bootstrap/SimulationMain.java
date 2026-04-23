@@ -83,6 +83,7 @@ public class SimulationMain {
         MovementUseCase movement = new MovementUseCase(agv, broadcaster);
 
         AgvController controller = new AgvController(agv, batchAssignment, movement, pathfinder, broadcaster);
+        controller.setObserver(ui);
         AgvMessageDispatcher dispatcher = new AgvMessageDispatcher(controller, bus);
 
         dispatcher.start();

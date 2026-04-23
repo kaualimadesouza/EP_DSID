@@ -30,4 +30,12 @@ public class AgvBroadcaster {
     public void broadcastRouteClaimed(String orderId, Route route) {
         messageBus.broadcast(AgvMessage.routeClaimed(agv, orderId, route));
     }
+
+    public void broadcastRouteReleased() {
+        messageBus.broadcast(AgvMessage.routeReleased(agv.getAgvId()));
+    }
+
+    public void broadcastOrderCompleted(String orderId) {
+        messageBus.broadcast(AgvMessage.orderCompleted(orderId));
+    }
 }

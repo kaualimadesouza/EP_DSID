@@ -48,6 +48,20 @@ public class AgvMessageDispatcher {
                     br.usp.agv.model.AgvStatus status = br.usp.agv.model.AgvStatus.valueOf(message.payload().get("status").toString());
                     controller.onHeartbeatReceived(message.senderId(), pos, status);
                 }
+                case ROUTE_CLAIMED -> {
+                    String agvId = (String) message.payload().get("agvId");
+                    String orderId = (String) message.payload().get("orderId");
+                    br.usp.agv.model.Route route = mapper.convertValue(message.payload().get("route"), br.usp.agv.model.Route.class);
+                    controller.onRouteClaimed(agvId, orderId, route);
+                }
+                case ROUTE_RELEASED -> {
+                    String agvId = (String) message.payload().get("agvId");
+                    controller.onRouteReleased(agvId);
+                }
+                case ORDER_COMPLETED -> {
+                    String orderId = (String) message.payload().get("orderId");
+                    controller.onOrderCompleted(orderId);
+                }
                 default -> System.out.println("Mensagem não suportada: " + message.type());
             }
         } catch (Exception e) {

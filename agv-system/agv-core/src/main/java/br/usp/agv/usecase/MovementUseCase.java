@@ -21,16 +21,21 @@ public class MovementUseCase {
                 
                 // vai até o pickup
                 System.out.println("AGV " + agv.getAgvId() + " indo para PICKUP de " + order.orderId());
+                broadcaster.broadcastRouteClaimed(order.orderId(), toPickup);
                 followRoute(toPickup.waypoints());
 
                 System.out.println("AGV " + agv.getAgvId() + " chegou no PICKUP. Indo para DELIVERY...");
                 Thread.sleep(1000); // Simula carregar o lote
-
+                
                 // vai até o delivery
+                broadcaster.broadcastRouteClaimed(order.orderId(), toDelivery);
                 followRoute(toDelivery.waypoints());
 
                 System.out.println("AGV " + agv.getAgvId() + " concluiu entrega de " + order.orderId());
                 agv.setStatus(AgvStatus.IDLE);
+                
+                broadcaster.broadcastOrderCompleted(order.orderId());
+                broadcaster.broadcastRouteReleased();
                 broadcaster.broadcastHeartbeat();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

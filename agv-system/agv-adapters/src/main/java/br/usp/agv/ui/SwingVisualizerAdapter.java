@@ -201,6 +201,22 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     }
 
     @Override
+    public void onRouteReleased(String agvId) {
+        synchronized (activeRoutes) {
+            this.activeRoutes.remove(agvId);
+        }
+        repaint();
+    }
+
+    @Override
+    public void onOrderCompleted(String orderId) {
+        synchronized (orders) {
+            this.orders.removeIf(o -> o.orderId().equals(orderId));
+        }
+        repaint();
+    }
+
+    @Override
     public void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders) {
         synchronized (agvs) {
             this.agvs = new ArrayList<>(allAgvs);

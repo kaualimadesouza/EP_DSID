@@ -13,5 +13,7 @@ public enum MessageType {
     ROUTE_RELEASED,     // "terminei, caminho livre"
 
     // Conecta lista de peers, keep-alive
-    HEARTBEAT
+    HEARTBEAT,
+    
+    ORDER_COMPLETED
 }
