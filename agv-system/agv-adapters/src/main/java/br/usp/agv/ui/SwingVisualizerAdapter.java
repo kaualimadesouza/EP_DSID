@@ -6,6 +6,7 @@ import br.usp.agv.model.Position;
 import br.usp.agv.ports.outbound.WorldObserverPort;
 
 import javax.swing.*;
+import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,31 +23,35 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     private final int rows;
     private final int cols;
     private final int cellSize = 40;
+    private final int offsetX = 45; 
+    private final int offsetY = 45; 
+    private final int statusWidth = 320;
     
     private List<Agv> agvs = new ArrayList<>();
     private List<Order> orders = new ArrayList<>();
     private final Map<String, br.usp.agv.model.Route> activeRoutes = new HashMap<>();
     
-    // Posições visuais para interpolação (x, y em pixels flutuantes)
     private final Map<String, Point2D.Double> visualPositions = new HashMap<>();
-    private final float lerpFactor = 0.15f; // Quão rápido a UI segue o core (0.0 a 1.0)
+    private final float lerpFactor = 0.15f; 
+
+    private final JTextPane statusPane;
+    private long lastStatusUpdate = 0;
 
     public SwingVisualizerAdapter(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
         
-        setTitle("Visualizador Sistema de AGVs");
-        setSize(cols * cellSize + 20, rows * cellSize + 40);
+        setTitle("Sistema de AGVs - USP DSID");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
         
-        JPanel panel = new JPanel() {
+        JPanel gridPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                // Ativar Anti-aliasing para ficar mais bonito
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 
                 drawGrid(g2);
                 synchronized (orders) {
@@ -60,15 +65,42 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 }
             }
         };
+        gridPanel.setBackground(Color.WHITE);
+        gridPanel.setPreferredSize(new Dimension(cols * cellSize + offsetX + 30, rows * cellSize + offsetY + 30));
         
-        add(panel);
+        statusPane = new JTextPane();
+        statusPane.setEditable(false);
+        statusPane.setContentType("text/html");
+        statusPane.setEditorKit(new HTMLEditorKit());
+        statusPane.setBackground(new Color(250, 250, 250));
         
-        // Loop de Animação (aprox 60 FPS)
+        JScrollPane scrollPane = new JScrollPane(statusPane);
+        scrollPane.setPreferredSize(new Dimension(statusWidth, 0));
+        scrollPane.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+        
+        add(gridPanel, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.EAST);
+        
+        pack();
+        setLocationRelativeTo(null);
+        
         Timer timer = new Timer(16, e -> {
-            synchronized (agvs) {
-                updateVisualPositions();
+            try {
+                synchronized (agvs) {
+                    updateVisualPositions();
+                }
+                
+                // Atualiza o texto de status apenas a cada 100ms para performance
+                long now = System.currentTimeMillis();
+                if (now - lastStatusUpdate > 100) {
+                    updateStatusHtml();
+                    lastStatusUpdate = now;
+                }
+                
+                repaint();
+            } catch (Exception ex) {
+                // Previne crash da UI
             }
-            repaint();
         });
         timer.start();
         
@@ -79,40 +111,122 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         for (Agv agv : agvs) {
             String id = agv.getAgvId();
             Position target = agv.getCurrentPosition();
+            if (target == null) continue;
             
-            // Alvo em pixels (lembrando que row=x, col=y)
-            double targetX = target.y() * cellSize;
-            double targetY = target.x() * cellSize;
+            double targetX = target.y() * cellSize + offsetX;
+            double targetY = target.x() * cellSize + offsetY;
             
             Point2D.Double current = visualPositions.computeIfAbsent(id, 
                 k -> new Point2D.Double(targetX, targetY));
             
-            // LERP: current = current + (target - current) * factor
             current.x += (targetX - current.x) * lerpFactor;
             current.y += (targetY - current.y) * lerpFactor;
         }
     }
 
+    private void updateStatusHtml() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style='font-family: sans-serif; padding: 10px; color: #2c3e50;'>");
+        
+        sb.append("<div style='background-color: #34495e; color: white; padding: 10px; border-radius: 5px;'>");
+        sb.append("<h2 style='margin: 0; font-size: 16px;'>Monitor de Sistema</h2>");
+        sb.append("<span style='font-size: 10px; opacity: 0.8;'>Grade: ").append(rows).append("x").append(cols).append("</span>");
+        sb.append("</div><br>");
+        
+        sb.append("<b style='font-size: 13px; color: #7f8c8d;'>AGVs ATIVOS</b><hr>");
+        synchronized (agvs) {
+            if (agvs.isEmpty()) {
+                sb.append("<i style='color: #bdc3c7;'>Aguardando conexão...</i>");
+            }
+            for (Agv agv : agvs) {
+                Position pos = agv.getCurrentPosition();
+                String posStr = (pos != null) ? String.format("(%d, %d)", pos.x(), pos.y()) : "---";
+                
+                String statusColor = switch(agv.getStatus()) {
+                    case IDLE -> "#95a5a6";
+                    case MOVING -> "#3498db";
+                    case ELECTING -> "#e67e22";
+                    case OFFLINE -> "#e74c3c";
+                    default -> "#2c3e50";
+                };
+
+                sb.append("<div style='margin-bottom: 8px; border-left: 4px solid ").append(statusColor).append("; padding-left: 8px;'>");
+                sb.append("<b style='color: #2c3e50;'>").append(agv.getAgvId()).append("</b><br>");
+                sb.append("<code style='font-size: 11px; background: #ecf0f1; padding: 2px 4px;'>POS: ").append(posStr).append("</code><br>");
+                sb.append("<span style='font-size: 11px;'>Status: <b style='color:").append(statusColor).append(";'>")
+                  .append(agv.getStatus()).append("</b></span>");
+                
+                if (agv.getCurrentOrder() != null) {
+                    String shortId = agv.getCurrentOrder().orderId();
+                    shortId = shortId.substring(0, Math.min(8, shortId.length()));
+                    sb.append("<br><span style='font-size: 11px; color: #27ae60;'>Pedido: #").append(shortId).append("</span>");
+                }
+                sb.append("</div>");
+            }
+        }
+        
+        sb.append("<br><b style='font-size: 13px; color: #7f8c8d;'>FILA DE PEDIDOS</b><hr>");
+        synchronized (orders) {
+            if (orders.isEmpty()) {
+                sb.append("<i style='color: #bdc3c7; font-size: 11px;'>Nenhum pedido pendente</i>");
+            } else {
+                for (Order o : orders) {
+                    String shortId = o.orderId().substring(0, Math.min(6, o.orderId().length()));
+                    sb.append("<div style='font-size: 11px; margin-bottom: 4px;'>");
+                    sb.append("<b style='color: #16a085;'>#").append(shortId).append("</b>: ");
+                    sb.append("<code style='color: #d35400;'>").append(o.pickup()).append("</code> &rarr; ");
+                    sb.append("<code style='color: #2980b9;'>").append(o.delivery()).append("</code>");
+                    sb.append("</div>");
+                }
+            }
+        }
+        
+        sb.append("</body></html>");
+        
+        String newHtml = sb.toString();
+        // Evita re-renderizar se nada mudou
+        if (!newHtml.equals(statusPane.getText())) {
+            statusPane.setText(newHtml);
+        }
+    }
+
     private void drawAgvs(Graphics2D g) {
-        g.setColor(Color.BLUE);
         for (Agv agv : agvs) {
             Point2D.Double p = visualPositions.get(agv.getAgvId());
             if (p == null) continue;
             
-            g.fillOval((int)p.x + 5, (int)p.y + 5, cellSize - 10, cellSize - 10);
-            g.drawString(agv.getAgvId(), (int)p.x + 10, (int)p.y + 25);
+            // Desenha o corpo do AGV
+            g.setColor(new Color(52, 152, 219)); 
+            g.fillOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
+            g.setColor(new Color(41, 128, 185));
+            g.setStroke(new BasicStroke(2));
+            g.drawOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
+            
+            // Desenha o "Nickname" acima do AGV
+            String id = agv.getAgvId();
+            g.setFont(new Font("SansSerif", Font.BOLD, 11));
+            FontMetrics fm = g.getFontMetrics();
+            int textX = (int)p.x + (cellSize - fm.stringWidth(id)) / 2;
+            int textY = (int)p.y + 5; // Posicionado acima do círculo
+            
+            // Sombra leve para legibilidade
+            g.setColor(new Color(255, 255, 255, 200));
+            g.drawString(id, textX + 1, textY + 1);
+            
+            // Texto principal
+            g.setColor(new Color(44, 62, 80));
+            g.drawString(id, textX, textY);
         }
     }
 
     private void drawRoutes(Graphics2D g) {
-        g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         
         for (Map.Entry<String, br.usp.agv.model.Route> entry : activeRoutes.entrySet()) {
             String agvId = entry.getKey();
             br.usp.agv.model.Route route = entry.getValue();
             if (route == null || route.waypoints().isEmpty()) continue;
             
-            // Encontrar posição atual do AGV para saber de onde começar a desenhar
             Agv currentAgv = agvs.stream()
                 .filter(a -> a.getAgvId().equals(agvId))
                 .findFirst()
@@ -120,7 +234,6 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             
             Position currentPos = (currentAgv != null) ? currentAgv.getCurrentPosition() : null;
             
-            // Encontrar o índice da posição atual na lista de waypoints
             int startIndex = 0;
             if (currentPos != null) {
                 for (int i = 0; i < route.waypoints().size(); i++) {
@@ -131,7 +244,6 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 }
             }
 
-            // Cor leve baseada no ID do AGV
             int hash = agvId.hashCode();
             g.setColor(new Color((hash & 0xFF0000) >> 16, (hash & 0x00FF00) >> 8, hash & 0x0000FF, 80));
             
@@ -139,43 +251,58 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 Position from = route.waypoints().get(i);
                 Position to = route.waypoints().get(i + 1);
                 g.drawLine(
-                    from.y() * cellSize + cellSize / 2, from.x() * cellSize + cellSize / 2,
-                    to.y() * cellSize + cellSize / 2, to.x() * cellSize + cellSize / 2
+                    from.y() * cellSize + cellSize / 2 + offsetX, from.x() * cellSize + cellSize / 2 + offsetY,
+                    to.y() * cellSize + cellSize / 2 + offsetX, to.x() * cellSize + cellSize / 2 + offsetY
                 );
             }
         }
     }
 
     private void drawGrid(Graphics2D g) {
-        g.setColor(new Color(230, 230, 230));
+        g.setFont(new Font("Monospaced", Font.BOLD, 12));
+        
         for (int i = 0; i <= rows; i++) {
-            g.drawLine(0, i * cellSize, cols * cellSize, i * cellSize);
+            int y = i * cellSize + offsetY;
+            g.setColor(new Color(235, 235, 235));
+            g.drawLine(offsetX, y, cols * cellSize + offsetX, y);
+            
+            if (i < rows) {
+                g.setColor(new Color(127, 140, 141));
+                g.drawString(String.format("%2d", i), offsetX - 30, y + cellSize / 2 + 5);
+            }
         }
+        
         for (int j = 0; j <= cols; j++) {
-            g.drawLine(j * cellSize, 0, j * cellSize, rows * cellSize);
+            int x = j * cellSize + offsetX;
+            g.setColor(new Color(235, 235, 235));
+            g.drawLine(x, offsetY, x, rows * cellSize + offsetY);
+            
+            if (j < cols) {
+                g.setColor(new Color(127, 140, 141));
+                g.drawString(String.valueOf(j), x + cellSize / 2 - 5, offsetY - 15);
+            }
         }
     }
 
     private void drawOrders(Graphics2D g) {
         for (Order order : orders) {
-            // Pickup - Verde (Círculo preenchido)
-            g.setColor(new Color(46, 204, 113));
+            g.setColor(new Color(46, 204, 113, 150));
             Position p = order.pickup();
-            g.fillOval(p.y() * cellSize + 8, p.x() * cellSize + 8, cellSize - 16, cellSize - 16);
-            g.setColor(Color.BLACK);
-            g.drawOval(p.y() * cellSize + 8, p.x() * cellSize + 8, cellSize - 16, cellSize - 16);
+            int px = p.y() * cellSize + 10 + offsetX;
+            int py = p.x() * cellSize + 10 + offsetY;
+            g.fillOval(px, py, cellSize - 20, cellSize - 20);
+            g.setColor(new Color(39, 174, 96));
+            g.drawOval(px, py, cellSize - 20, cellSize - 20);
             
-            // Delivery - Vermelho (Quadrado oco com X)
             g.setColor(new Color(231, 76, 60));
             Position d = order.delivery();
-            int dx = d.y() * cellSize + 5;
-            int dy = d.x() * cellSize + 5;
-            int size = cellSize - 10;
-            g.setStroke(new BasicStroke(3));
+            int dx = d.y() * cellSize + 8 + offsetX;
+            int dy = d.x() * cellSize + 8 + offsetY;
+            int size = cellSize - 16;
+            g.setStroke(new BasicStroke(2));
             g.drawRect(dx, dy, size, size);
             g.drawLine(dx, dy, dx + size, dy + size);
             g.drawLine(dx + size, dy, dx, dy + size);
-            g.setStroke(new BasicStroke(1));
         }
     }
 
@@ -220,6 +347,13 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     public void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders) {
         synchronized (agvs) {
             this.agvs = new ArrayList<>(allAgvs);
+            
+            // Limpa dados residuais de AGVs que saíram
+            List<String> currentIds = allAgvs.stream().map(Agv::getAgvId).toList();
+            visualPositions.keySet().removeIf(id -> !currentIds.contains(id));
+            synchronized (activeRoutes) {
+                activeRoutes.keySet().removeIf(id -> !currentIds.contains(id));
+            }
         }
         synchronized (orders) {
             this.orders = new ArrayList<>(pendingOrders);
