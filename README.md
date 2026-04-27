@@ -8,7 +8,7 @@ Este projeto foi desenvolvido para a disciplina de **Sistemas de Informação Di
 
 ## Documentação
 
-Mais detalhes em **[DOCUMENTACAO.md](./DOCUMENTACAO.md)** ou na forma de [slides](https://kaualimadesouza.github.io/EP_DSID/20).
+Mais detalhes em **[DOCUMENTACAO.md](./DOCUMENTACAO.md)** ou na forma de [slides](https://kaualimadesouza.github.io/EP_DSID).
 
 ## Estrutura do Projeto
 
