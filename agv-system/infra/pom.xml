@@ -32,6 +32,22 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.5.3</version>
                 <executions>
+                    <!-- JAR Completo (Gerenciador do Sistema) -->
+                    <execution>
+                        <id>agv-system-all</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/agv-system-all.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>br.usp.agv.bootstrap.AgvSystemManager</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
                     <!-- JAR para o Nó AGV -->
                     <execution>
                         <id>agv-node</id>

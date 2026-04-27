@@ -18,37 +18,28 @@ Mais detalhes em **[DOCUMENTACAO.md](./DOCUMENTACAO.md)** ou na forma de [slides
 
 ## Execução
 
-Baixe os arquivos disponíveis em [Releases](https://github.com/kaualimadesouza/EP_DSID/releases).
+Baixe o arquivo `agv-system-all.jar` disponível em [Releases](https://github.com/kaualimadesouza/EP_DSID/releases).
 Certifique-se de ter o **Java 21+** instalado.
 
-Existem duas formas principais de rodar a simulação:
+### Como rodar
 
-### Opção 1: Execução Manual
+O sistema é consolidado em um único executável que gerencia todos os componentes:
 
-1. **Visualizador (UI):**
-   ```bash
-   # java -jar visualizer.jar [cols] [rows]
-   java -jar visualizer.jar 15 15
-   ```
-2. **Nós AGV:**
-   Rode o seguinte programa para cada nó que deseja simular.
-   ```bash
-   # java -jar agv-node.jar [ID] [posX] [posY] [gridW] [gridH]
-   java -jar agv-node.jar AGV-1 0 0 15 15
-   ```
-3. **Gerador de Pedidos:**
-   ```bash
-   java -jar generator.jar
-   ```
+```bash
+java -jar agv-system-all.jar
+```
 
-### Opção 2: CLI interativa
+**Configuração:**
+Ao iniciar, o programa perguntará interativamente:
 
-**Requisito:** `tmux`.
-Vantagens de rodar dessa forma: O script perguntará interativamente o tamanho do grid, número de AGVs, posições, etc.
+- Número de AGVs desejados.
+- Dimensões do Grid (Largura x Altura).
+- Modo de posicionamento (Automático ou Manual).
 
-1. Coloque os arquivos `agv-node.jar`, `visualizer.jar` e `generator.jar` na mesma pasta que o script `run_tui.sh`.
-2. Dê permissão de execução: `chmod +x run_tui.sh`
-3. Execute o script:
-   ```bash
-   ./run_tui.sh
-   ```
+**Comandos:**
+
+Após a inicialização, você pode digitar comandos diretamente no console para gerar pedidos:
+
+- `/random_orders <n>`: Gera *n* pedidos aleatórios.
+- `/new_order <px> <py> <dx> <dy>`: Cria um pedido específico (pickup -> delivery).
+- `exit`: Encerra todo o sistema e fecha os processos.

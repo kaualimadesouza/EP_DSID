@@ -14,6 +14,21 @@
         <version>3.5.3</version>
         <executions>
           <execution>
+            <id>agv-system-all</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <outputFile>${project.build.directory}/agv-system-all.jar</outputFile>
+              <transformers>
+                <transformer>
+                  <mainClass>br.usp.agv.bootstrap.AgvSystemManager</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+          <execution>
             <id>agv-node</id>
             <phase>package</phase>
             <goals>

@@ -33,9 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            agv-system/infra/target/agv-node.jar
-            agv-system/infra/target/visualizer.jar
-            agv-system/infra/target/generator.jar
+            agv-system/infra/target/agv-system-all.jar
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
@@ -47,7 +45,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: agv-system-jars
-          path: |
-            agv-system/infra/target/agv-node.jar
-            agv-system/infra/target/visualizer.jar
-            agv-system/infra/target/generator.jar
+          path: agv-system/infra/target/agv-system-all.jar
