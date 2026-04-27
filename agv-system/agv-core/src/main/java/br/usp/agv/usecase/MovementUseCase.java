@@ -50,18 +50,4 @@ public class MovementUseCase {
             broadcaster.broadcastHeartbeat();
         }
     }
-
-    @Deprecated
-    public void executeRoute(Route route) {
-        new Thread(() -> {
-            try {
-                agv.setStatus(AgvStatus.MOVING);
-                followRoute(route.waypoints());
-                agv.setStatus(AgvStatus.IDLE);
-                broadcaster.broadcastHeartbeat();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }).start();
-    }
 }
