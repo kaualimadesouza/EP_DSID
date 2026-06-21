@@ -1,0 +1,131 @@
+\documentclass[a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{left=1.5cm, right=1.5cm, top=2.54cm, bottom=2.54cm}
+\usepackage{graphicx, setspace, amsmath, amssymb, titlesec, fancyhdr, multicol, parskip, indentfirst, etoolbox, caption, cite, xcolor}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{hyperref}
+
+% Title Formatting
+\titleformat{\section}{\centering\large\scshape}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{1em}{}
+\setstretch{1.0} % Keep single spacing
+\setlength{\parskip}{6pt} % Space between paragraphs
+\titlespacing{\section}{0pt}{6pt}{6pt}
+\titlespacing{\subsection}{0pt}{6pt}{6pt}
+\titlespacing{\subsubsection}{0pt}{6pt}{6pt}
+% Document Title
+\title{
+    \textbf{Especificação do Projeto}
+}
+
+\date{} % No date
+\captionsetup{labelfont={small,sc}, textfont={small,sc}}
+% Section Numbering
+% Define numbering format
+\renewcommand{\thesection}{\Roman{section}.}
+\renewcommand{\thesubsection}{\textit{\Alph{subsection}.}}
+\renewcommand{\thesubsubsection}{\textit{\arabic{subsubsection}.}}
+\renewcommand{\thetable}{\Roman{table}} % Set table numbering to Roman
+\renewcommand{\thefigure}{\Roman{figure}} % Number figures in Roman numerals
+
+% Make titles italic as well
+\titleformat{\subsection}{\normalfont\large\itshape}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{1em}{}
+
+\setcounter{page}{1}
+
+% Fancy Header Configuration
+\pagestyle{fancy}
+\fancyhf{} % Clear all header/footer fields
+
+% First Page Header
+\fancypagestyle{firstpage}{
+    \fancyhead[C]{
+        \centering
+        {\fontsize{14pt}{10pt}\selectfont
+        \textbf{Universidade de São Paulo}\\[0.5em]
+        \textbf{ACH2147 - Desenvolvimento de Sistemas de Informação Distribuídos}}\\[0.2em]
+        {\fontsize{8pt}{10pt}\selectfont
+        \textbf{Prof. Doutor:} Renan Cerqueira Afonso Alves \textbf{Ano:} 1° Semestre/2026}
+    }
+}
+
+% Default Header for Other Pages
+\fancyhead[C]{\textbf{Escola de Artes, Ciências e Humanidades - Universidade de São Paulo}}
+
+\begin{document}
+
+\maketitle
+\vspace{-1.5cm}
+\thispagestyle{firstpage}
+
+% Authors Block
+\begin{multicols}{2}
+    \centering    
+    \textbf{Kevin Rodrigues Nunes}\\
+            15676030\\
+            T94
+
+    \textbf{Victor Yodono}\\
+            13829040\\
+            T94
+
+    \textbf{Isabelle da Silva Tobias}\\
+            15525991\\
+            T94
+
+    \textbf{Kauã Lima de Souza}\\
+            15674702\\
+            T94
+
+\end{multicols}
+
+\singlespacing
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0.5cm}
+
+\begin{multicols}{2}
+\setlength{\columnsep}{0.5cm}
+
+\noindent \textbf{\textit{Resumo---}} Este documento apresenta a especificação do projeto desenvolvido pelo grupo na disciplina ACH2147 - Desenvolvimento de Sistemas de Informação Distribuídos. Seu objetivo é consolidar as decisões de projeto tomadas pelo grupo e descrevê-las com detalhamento suficiente para que o documento seja completo o bastante para permitir a implementação do projeto por outro grupo, ou seja, por qualquer pessoa que o leia. Para tanto, o relatório se propõe a apresentar uma visão geral do que o grupo se propôs a fazer, as principais decisões de projeto e a arquitetura adotada para a solução proposta.
+
+\section{Introdução}
+
+\section{Visão Geral do Projeto}
+
+\section{Requisitos}
+
+\section{Arquitetura}
+
+\section{Processos}
+
+\section{Comunicação}
+
+\section{Nomeação}
+
+\section{Coordenação}
+
+\section{Consistência e Replicação}
+
+\section{Tolerância a Falhas}
+
+\section{Segurança}
+
+\section{Decisões de Projeto}
+
+\section{Tecnologias e Instruções de Execução}
+
+\section{Conclusão}
+
+\renewcommand{\refname}{Referências}
+\begin{thebibliography}{15}
+
+
+\end{thebibliography}
+
+\end{multicols}
+\end{document}
