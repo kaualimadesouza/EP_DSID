@@ -21,8 +21,17 @@ public class OrderGeneratorMain {
     private static final Map<String, Order> activeOrders = new ConcurrentHashMap<>();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static int generatorSeq = 1;
+    private static int gridWidth = 15;
+    private static int gridHeight = 15;
 
     public static void main(String[] args) {
+        if (args.length >= 2) {
+            try {
+                gridWidth = Integer.parseInt(args[0]);
+                gridHeight = Integer.parseInt(args[1]);
+            } catch (NumberFormatException ignored) {}
+        }
+
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
         // Listener para remover pedidos concluídos (atribuídos)
@@ -99,7 +108,7 @@ public class OrderGeneratorMain {
             }
             int n = Integer.parseInt(parts[1]);
             for (int i = 0; i < n; i++) {
-                createAndSendOrder(network, rand.nextInt(15), rand.nextInt(15), rand.nextInt(15), rand.nextInt(15));
+                createAndSendOrder(network, rand.nextInt(gridHeight), rand.nextInt(gridWidth), rand.nextInt(gridHeight), rand.nextInt(gridWidth));
             }
         } catch (Exception e) {
             System.out.println("Erro: " + e.getMessage());

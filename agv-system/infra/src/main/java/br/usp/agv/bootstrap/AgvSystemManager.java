@@ -63,7 +63,7 @@ public class AgvSystemManager {
         launch(javaBin, classpath, "br.usp.agv.bootstrap.VisualizerMain", "VISUALIZER", String.valueOf(gridW), String.valueOf(gridH));
 
         // 4. Lançar Gerador (e preparar para enviar input)
-        Process generatorProcess = launch(javaBin, classpath, "br.usp.agv.bootstrap.OrderGeneratorMain", "GENERATOR");
+        Process generatorProcess = launch(javaBin, classpath, "br.usp.agv.bootstrap.OrderGeneratorMain", "GENERATOR", String.valueOf(gridW), String.valueOf(gridH));
         
         // 5. Lançar AGV Nodes
         for (int i = 1; i <= numAgvs; i++) {
