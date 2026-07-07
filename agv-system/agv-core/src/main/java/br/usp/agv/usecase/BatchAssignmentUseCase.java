@@ -108,7 +108,7 @@ public class BatchAssignmentUseCase {
             }
         }
 
-        if (currentLeaderId != null) {
+        if (currentLeaderId != null && !isLeader()) {
             if (now - lastLeaderHeartbeatSeen > timeout) {
                 br.usp.agv.logging.SystemLogger.info("LÍDER", "Líder " + Agv.getStaticNameFromId(currentLeaderId) + " caiu (sem heartbeat por 10s). Iniciando eleição...", true);
                 currentLeaderId = null;

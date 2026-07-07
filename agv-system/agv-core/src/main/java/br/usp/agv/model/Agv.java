@@ -71,8 +71,11 @@ public class Agv {
 
     public static String getStaticNameFromId(String id) {
         if (id == null) return "";
-        int index = id.indexOf('-');
-        return index == -1 ? id : id.substring(0, index);
+        String[] parts = id.split("-");
+        if (parts.length >= 2 && parts[0].equals("AGV")) {
+            return parts[0] + "-" + parts[1];
+        }
+        return id;
     }
 }
 
