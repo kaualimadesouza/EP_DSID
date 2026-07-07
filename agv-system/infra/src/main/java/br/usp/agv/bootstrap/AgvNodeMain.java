@@ -19,13 +19,13 @@ import java.util.Scanner;
  */
 public class AgvNodeMain {
     public static void main(String[] args) {
-        String agvId = args.length > 0 ? args[0] : "AGV-" + System.currentTimeMillis() % 1000;
+        String staticName = args.length > 0 ? args[0] : "agv-" + System.currentTimeMillis() % 1000;
         int startX = args.length > 2 ? Integer.parseInt(args[1]) : 0;
         int startY = args.length > 2 ? Integer.parseInt(args[2]) : 0;
         int gridWidth = args.length > 4 ? Integer.parseInt(args[3]) : 15;
         int gridHeight = args.length > 4 ? Integer.parseInt(args[4]) : 15;
 
-        System.out.println("Iniciando Nó AGV: " + agvId + " em (" + startX + "," + startY + ") Grid: " + gridWidth + "x" + gridHeight);
+        System.out.println("Iniciando Nó AGV (Estático): " + staticName + " em (" + startX + "," + startY + ") Grid: " + gridWidth + "x" + gridHeight);
 
         // Infra
         GridGraphAdapter world = new GridGraphAdapter(gridWidth, gridHeight, Collections.emptySet());
@@ -33,7 +33,8 @@ public class AgvNodeMain {
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
         // Core
-        Agv agv = new Agv(agvId, new Position(startX, startY));
+        Agv agv = new Agv(staticName, new Position(startX, startY));
+        network.setLocalSenderId(agv.getAgvId());
         AgvBroadcaster broadcaster = new AgvBroadcaster(agv, network);
 
         BatchAssignmentUseCase batchAssignment = new BatchAssignmentUseCase(agv, broadcaster);
@@ -45,7 +46,7 @@ public class AgvNodeMain {
         dispatcher.start();
         controller.start();
 
-        System.out.println("Nó " + agvId + " pronto e ouvindo na rede UDP.");
+        System.out.println("Nó dinâmico " + agv.getAgvId() + " pronto e ouvindo na rede UDP.");
         
         // Mantém o processo vivo
         new Scanner(System.lineSeparator()).nextLine();

@@ -39,6 +39,9 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
                     Thread.sleep(1000); // Heartbeat a cada 1Hz
                 } catch (InterruptedException e) {
                     break;
+                } catch (Throwable t) {
+                    System.err.println("ERRO CRÍTICO NA THREAD DE HEARTBEAT:");
+                    t.printStackTrace();
                 }
             }
         });
@@ -101,5 +104,25 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
         if (observer != null) {
             observer.onOrderCompleted(orderId);
         }
+    }
+
+    @Override
+    public void onElectionReceived(String senderId) {
+        batchAssignment.onElectionReceived(senderId);
+    }
+
+    @Override
+    public void onOkReceived(String senderId) {
+        batchAssignment.onOkReceived(senderId);
+    }
+
+    @Override
+    public void onCoordinatorReceived(String senderId) {
+        batchAssignment.onCoordinatorReceived(senderId);
+    }
+
+    @Override
+    public void updateLamportClock(long receivedTimestamp) {
+        agv.updateLamportClock(receivedTimestamp);
     }
 }

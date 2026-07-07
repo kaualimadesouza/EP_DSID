@@ -52,10 +52,9 @@ public class SimulationMain {
         System.out.println("3 AGVs carregados (Alpha, Beta, Gamma).");
         System.out.println("Aguardando pedido de demonstração...");
 
-        // 4. Simulação de um Cenário
         new Thread(() -> {
             try {
-                Thread.sleep(4000);
+                Thread.sleep(12000);
                 Order order = new Order("ORD-TEST-001", new Position(7, 7), new Position(0, 14));
                 System.out.println("\n[EVENTO] Novo Pedido Criado no Centro do Grid!");
                 

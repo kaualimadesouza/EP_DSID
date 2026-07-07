@@ -19,7 +19,7 @@ public class InMemoryMessageBus implements MessageBusPort {
 
     @Override
     public void broadcast(AgvMessage message) {
-        // No simulador local, broadcast envia para todos os inscritos em "agv-system"
+        System.out.println("[InMemoryMessageBus] Broadcast: " + message.type() + " from " + message.senderId() + " (seq: " + message.sequenceNumber() + ")");
         publish("agv-system", message);
     }
 

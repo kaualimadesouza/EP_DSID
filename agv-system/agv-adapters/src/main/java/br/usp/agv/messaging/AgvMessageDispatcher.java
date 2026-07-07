@@ -28,11 +28,14 @@ public class AgvMessageDispatcher {
 
     private void dispatch(AgvMessage message) {
         try {
+            controller.updateLamportClock(message.lamportTimestamp());
+
             switch (message.type()) {
                 case NEW_ORDER -> {
                     String id = (String) message.payload().get("orderId");
                     Position pickup = mapper.convertValue(message.payload().get("pickup"), Position.class);
                     Position delivery = mapper.convertValue(message.payload().get("delivery"), Position.class);
+                    System.out.println("[EVENTO] Recebido NEW_ORDER no despachante: " + id);
                     controller.onNewOrder(new Order(id, pickup, delivery));
                 }
                 case BATCH_PROPOSAL -> {
@@ -62,11 +65,20 @@ public class AgvMessageDispatcher {
                     String orderId = (String) message.payload().get("orderId");
                     controller.onOrderCompleted(orderId);
                 }
-                default -> System.out.println("Mensagem não suportada: " + message.type());
+                case ELECTION -> {
+                    controller.onElectionReceived(message.senderId());
+                }
+                case OK -> {
+                    controller.onOkReceived(message.senderId());
+                }
+                case COORDINATOR -> {
+                    controller.onCoordinatorReceived(message.senderId());
+                }
+                default -> System.out.println("Mensagem não suportada ou interna: " + message.type());
             }
-        } catch (Exception e) {
-            System.err.println("Erro ao despachar mensagem " + message.type() + ": " + e.getMessage());
-            e.printStackTrace();
+        } catch (Throwable t) {
+            System.err.println("ERRO CRÍTICO ao despachar mensagem " + message.type() + ": " + t.getMessage());
+            t.printStackTrace();
         }
     }
 }

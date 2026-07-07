@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class OrderGeneratorMain {
     private static final Map<String, Order> activeOrders = new ConcurrentHashMap<>();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static int generatorSeq = 1;
 
     public static void main(String[] args) {
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
@@ -135,7 +136,7 @@ public class OrderGeneratorMain {
         payload.put("pickup", order.pickup());
         payload.put("delivery", order.delivery());
 
-        AgvMessage orderMsg = new AgvMessage("GENERATOR", MessageType.NEW_ORDER, payload);
+        AgvMessage orderMsg = new AgvMessage("GENERATOR", generatorSeq++, 0, MessageType.NEW_ORDER, payload);
         network.broadcast(orderMsg);
     }
 }

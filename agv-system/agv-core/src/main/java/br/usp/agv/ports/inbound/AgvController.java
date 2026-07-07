@@ -18,4 +18,12 @@ public interface AgvController {
     void onRouteReleased(String agvId);
 
     void onOrderCompleted(String orderId);
+
+    void onElectionReceived(String senderId);
+
+    void onOkReceived(String senderId);
+
+    void onCoordinatorReceived(String senderId);
+
+    void updateLamportClock(long receivedTimestamp);
 }

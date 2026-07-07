@@ -15,5 +15,14 @@ public enum MessageType {
     // Conecta lista de peers, keep-alive
     HEARTBEAT,
     
-    ORDER_COMPLETED
+    ORDER_COMPLETED,
+    
+    // Eleição Bully
+    ELECTION,
+    OK,
+    COORDINATOR,
+
+    // Controle SRM
+    NACK_REQUEST,
+    NACK_RESPONSE
 }

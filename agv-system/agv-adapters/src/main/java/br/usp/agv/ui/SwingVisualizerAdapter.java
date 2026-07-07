@@ -147,6 +147,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                     case MOVING -> "#3498db";
                     case ELECTING -> "#e67e22";
                     case OFFLINE -> "#e74c3c";
+                    case FAIL_SAFE -> "#e74c3c";
                     default -> "#2c3e50";
                 };
 
@@ -202,8 +203,8 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             g.setStroke(new BasicStroke(2));
             g.drawOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
             
-            // Desenha o "Nickname" acima do AGV
-            String id = agv.getAgvId();
+            // Desenha o "Nickname" acima do AGV (usa o nome estático curto para caber na tela)
+            String id = br.usp.agv.model.Agv.getStaticNameFromId(agv.getAgvId());
             g.setFont(new Font("SansSerif", Font.BOLD, 11));
             FontMetrics fm = g.getFontMetrics();
             int textX = (int)p.x + (cellSize - fm.stringWidth(id)) / 2;

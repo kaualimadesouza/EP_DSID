@@ -45,6 +45,11 @@ public class MovementUseCase {
 
     private void followRoute(List<Position> waypoints) throws InterruptedException {
         for (Position p : waypoints) {
+            // Modo Fail-Safe: Se perder rede, pausa a movimentação até que saia do estado FAIL_SAFE
+            while (agv.getStatus() == AgvStatus.FAIL_SAFE) {
+                Thread.sleep(500);
+            }
+            
             Thread.sleep(300);
             agv.setCurrentPosition(p);
             broadcaster.broadcastHeartbeat();
