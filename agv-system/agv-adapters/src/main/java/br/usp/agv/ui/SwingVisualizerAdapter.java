@@ -134,9 +134,9 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         sb.append("<span style='font-size: 10px; opacity: 0.8;'>Grade: ").append(rows).append("x").append(cols).append("</span>");
         if (activeLeaderId != null) {
             String leaderName = br.usp.agv.model.Agv.getStaticNameFromId(activeLeaderId);
-            sb.append("<br><span style='font-size: 11px; color: #f1c40f;'>👑 Líder Ativo: <b>").append(leaderName).append("</b></span>");
+            sb.append("<br><span style='font-size: 11px; color: #f1c40f;'>Líder Ativo: <b>").append(leaderName).append("</b></span>");
         } else {
-            sb.append("<br><span style='font-size: 11px; color: #bdc3c7;'>👑 Líder Ativo: <b>Nenhum</b></span>");
+            sb.append("<br><span style='font-size: 11px; color: #bdc3c7;'>Líder Ativo: <b>Nenhum</b></span>");
         }
         sb.append("</div><br>");
         
@@ -222,12 +222,6 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             }
             g.setStroke(new BasicStroke(2));
             g.drawOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
-            
-            // Desenha uma coroa sobre o líder
-            if (isLeader) {
-                g.setColor(new Color(241, 196, 15));
-                g.drawString("👑", (int)p.x + 1, (int)p.y + 13);
-            }
             
             // Desenha o "Nickname" acima do AGV (usa o nome estático curto para caber na tela)
             String id = br.usp.agv.model.Agv.getStaticNameFromId(agv.getAgvId());
@@ -374,12 +368,6 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     public void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders) {
         synchronized (agvs) {
             this.agvs = new ArrayList<>(allAgvs);
-            
-            // Limpa rotas apenas se o AGV realmente sumiu
-            List<String> currentIds = allAgvs.stream().map(Agv::getAgvId).toList();
-            synchronized (activeRoutes) {
-                activeRoutes.keySet().removeIf(id -> !currentIds.contains(id));
-            }
         }
         synchronized (orders) {
             this.orders = new ArrayList<>(pendingOrders);
