@@ -35,7 +35,7 @@ public class AgvMessageDispatcher {
                     String id = (String) message.payload().get("orderId");
                     Position pickup = mapper.convertValue(message.payload().get("pickup"), Position.class);
                     Position delivery = mapper.convertValue(message.payload().get("delivery"), Position.class);
-                    System.out.println("[EVENTO] Recebido NEW_ORDER no despachante: " + id);
+                    br.usp.agv.logging.SystemLogger.info("EVENTO", "Recebido NEW_ORDER no despachante: " + id, true);
                     controller.onNewOrder(new Order(id, pickup, delivery));
                 }
                 case BATCH_PROPOSAL -> {
@@ -74,11 +74,10 @@ public class AgvMessageDispatcher {
                 case COORDINATOR -> {
                     controller.onCoordinatorReceived(message.senderId());
                 }
-                default -> System.out.println("Mensagem não suportada ou interna: " + message.type());
+                default -> br.usp.agv.logging.SystemLogger.debug("DISPATCHER", "Mensagem não suportada ou interna: " + message.type());
             }
         } catch (Throwable t) {
-            System.err.println("ERRO CRÍTICO ao despachar mensagem " + message.type() + ": " + t.getMessage());
-            t.printStackTrace();
+            br.usp.agv.logging.SystemLogger.error("DISPATCHER", "ERRO CRÍTICO ao despachar mensagem " + message.type() + ": " + t.getMessage(), t);
         }
     }
 }

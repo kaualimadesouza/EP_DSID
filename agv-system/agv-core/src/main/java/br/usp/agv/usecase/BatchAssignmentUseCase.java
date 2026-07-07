@@ -80,7 +80,7 @@ public class BatchAssignmentUseCase {
         
         for (String deadPeer : deadPeers) {
             activePeers.remove(deadPeer);
-            System.out.println("[P2P] Peer " + deadPeer + " removido por inatividade.");
+            br.usp.agv.logging.SystemLogger.info("P2P", "Peer " + Agv.getStaticNameFromId(deadPeer) + " removido por inatividade.", true);
             
             // Se nós somos o líder, recuperamos a tarefa dele se houver
             if (isLeader()) {
@@ -97,27 +97,27 @@ public class BatchAssignmentUseCase {
         // entra em modo Fail-Safe para evitar colisões
         if (now - lastAnyPeerMessageTime > 6000) {
             if (agv.getStatus() == AgvStatus.MOVING) {
-                System.out.println("[FAIL-SAFE] Perda de rede detectada (silêncio de 6s). Parando AGV!");
+                br.usp.agv.logging.SystemLogger.info("FAIL-SAFE", "Perda de rede detectada (silêncio de 6s). Parando AGV!", true);
                 agv.setStatus(AgvStatus.FAIL_SAFE);
             }
         } else {
             // Rede recuperada
             if (agv.getStatus() == AgvStatus.FAIL_SAFE) {
-                System.out.println("[FAIL-SAFE] Conectividade restabelecida. Retomando movimentação.");
+                br.usp.agv.logging.SystemLogger.info("FAIL-SAFE", "Conectividade restabelecida. Retomando movimentação.", true);
                 agv.setStatus(AgvStatus.MOVING);
             }
         }
 
         if (currentLeaderId != null) {
             if (now - lastLeaderHeartbeatSeen > timeout) {
-                System.out.println("[LÍDER] Líder " + currentLeaderId + " caiu (sem heartbeat por 10s). Iniciando eleição...");
+                br.usp.agv.logging.SystemLogger.info("LÍDER", "Líder " + Agv.getStaticNameFromId(currentLeaderId) + " caiu (sem heartbeat por 10s). Iniciando eleição...", true);
                 currentLeaderId = null;
                 startElection();
             }
         } else {
             // Sem líder estabelecido há mais de 5s desde o último contato
             if (now - lastLeaderHeartbeatSeen > 5000 && !isElecting) {
-                System.out.println("[LÍDER] Nenhum líder conhecido. Iniciando eleição...");
+                br.usp.agv.logging.SystemLogger.info("LÍDER", "Nenhum líder conhecido. Iniciando eleição...", true);
                 startElection();
             }
         }
@@ -129,7 +129,7 @@ public class BatchAssignmentUseCase {
         okReceived = false;
         
         String myStaticName = agv.getStaticName();
-        System.out.println("[ELEIÇÃO] Iniciando algoritmo Bully por " + agv.getAgvId());
+        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "Iniciando algoritmo Bully por " + agv.getStaticName(), true);
         
         List<String> higherIds = new ArrayList<>();
         for (String peerId : activePeers.keySet()) {
@@ -153,14 +153,14 @@ public class BatchAssignmentUseCase {
             electionTimeoutFuture = scheduler.schedule(() -> {
                 synchronized (this) {
                     if (!okReceived) {
-                        System.out.println("[ELEIÇÃO] Nenhum OK recebido de nós superiores. Assumindo coordenação.");
+                        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "Nenhum OK recebido de nós superiores. Assumindo coordenação.", true);
                         becomeLeader();
                     } else {
-                        System.out.println("[ELEIÇÃO] OK recebido. Aguardando COORDINATOR...");
+                        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "OK recebido. Aguardando COORDINATOR...", false);
                         // Timeout secundário para aguardar mensagem do novo líder
                         scheduler.schedule(() -> {
                             if (currentLeaderId == null && isElecting) {
-                                System.out.println("[ELEIÇÃO] COORDINATOR não recebido. Reiniciando eleição...");
+                                br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "COORDINATOR não recebido. Reiniciando eleição...", true);
                                 isElecting = false;
                                 startElection();
                             }
@@ -175,7 +175,7 @@ public class BatchAssignmentUseCase {
         isElecting = false;
         currentLeaderId = agv.getAgvId();
         lastLeaderHeartbeatSeen = System.currentTimeMillis();
-        System.out.println("[LÍDER] Eu (" + agv.getAgvId() + ") assumi como Líder Coordenador (Primário).");
+        br.usp.agv.logging.SystemLogger.info("LÍDER", "Eu (" + agv.getStaticName() + ") assumi como Líder Coordenador (Primário).", true);
         broadcaster.broadcastCoordinator();
         
         // Recupera tarefas órfãs de qualquer nó que tenha morrido antes
@@ -187,9 +187,9 @@ public class BatchAssignmentUseCase {
         String myStatic = agv.getStaticName();
         String senderStatic = Agv.getStaticNameFromId(senderId);
         
-        System.out.println("[ELEIÇÃO] ELECTION recebida de " + senderId);
+        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "ELECTION recebida de " + Agv.getStaticNameFromId(senderId), false);
         if (myStatic.compareTo(senderStatic) > 0) {
-            System.out.println("[ELEIÇÃO] Enviando OK para " + senderId);
+            br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "Enviando OK para " + Agv.getStaticNameFromId(senderId), false);
             broadcaster.broadcastOk();
             startElection();
         }
@@ -201,14 +201,14 @@ public class BatchAssignmentUseCase {
         String senderStatic = Agv.getStaticNameFromId(senderId);
         
         if (senderStatic.compareTo(myStatic) > 0) {
-            System.out.println("[ELEIÇÃO] OK recebido de " + senderId);
+            br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "OK recebido de " + Agv.getStaticNameFromId(senderId), false);
             okReceived = true;
         }
     }
 
     public void onCoordinatorReceived(String senderId) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
-        System.out.println("[LÍDER] COORDINATOR recebido de " + senderId + ". Atualizando líder.");
+        br.usp.agv.logging.SystemLogger.info("LÍDER", "COORDINATOR recebido de " + Agv.getStaticNameFromId(senderId) + ". Atualizando líder.", true);
         currentLeaderId = senderId;
         lastLeaderHeartbeatSeen = System.currentTimeMillis();
         isElecting = false;
@@ -264,8 +264,7 @@ public class BatchAssignmentUseCase {
             broadcaster.broadcastBatchProposal(batch);
             broadcaster.broadcastBatchAck(batch.batchId()); // Envia o ACK do líder para os backups na rede
         } catch (Throwable t) {
-            System.err.println("ERRO CRÍTICO EM PROPOSE_BATCH:");
-            t.printStackTrace();
+            br.usp.agv.logging.SystemLogger.error("LOTE", "ERRO CRÍTICO EM PROPOSE_BATCH", t);
         }
     }
 
@@ -303,7 +302,7 @@ public class BatchAssignmentUseCase {
         // Remova para evitar processamento duplo
         if (proposedBatches.remove(batch.batchId()) == null) return;
 
-        System.out.println("Executando lote: " + batch.batchId() + " com " + batch.orders().size() + " pedidos");
+        br.usp.agv.logging.SystemLogger.info("LOTE", "Executando lote: " + batch.batchId() + " com " + batch.orders().size() + " pedidos", true);
 
         List<Order> orders = new ArrayList<>(batch.orders());
         orders.sort(Comparator.comparing(Order::orderId));
@@ -319,7 +318,7 @@ public class BatchAssignmentUseCase {
 
                 // Atribui pedido
                 if (bestAgvId.equals(agv.getAgvId())) {
-                    System.out.println("[TOTAL ORDERING] Atribuído a mim: " + order.orderId());
+                    br.usp.agv.logging.SystemLogger.info("TOTAL ORDERING", "Atribuído a mim: " + order.orderId(), true);
                     if (listener != null) {
                         listener.onOrderAssigned(order);
                     }
@@ -327,7 +326,7 @@ public class BatchAssignmentUseCase {
                 // Atualiza estado local para próxima iteração do loop de pedidos no mesmo lote
                 states.computeIfPresent(bestAgvId, (k, old) -> new AgvSnapshot(old.agvId(), old.position(), AgvStatus.MOVING, old.lastSeen()));
             } else {
-                System.out.println("Nenhum AGV disponível para o pedido " + order.orderId() + ". Liberando para futura retransmissão.");
+                br.usp.agv.logging.SystemLogger.info("TOTAL ORDERING", "Nenhum AGV disponível para o pedido " + order.orderId() + ". Liberando para futura retransmissão.", true);
                 processedOrders.remove(order.orderId());
             }
         }
@@ -356,7 +355,7 @@ public class BatchAssignmentUseCase {
     }
 
     private synchronized void recoverOrphanTasks() {
-        System.out.println("[ÓRFÃOS] Líder verificando se há tarefas órfãs para recuperar...");
+        br.usp.agv.logging.SystemLogger.info("ÓRFÃOS", "Líder verificando se há tarefas órfãs para recuperar...", false);
         for (Map.Entry<String, Order> entry : activeAssignments.entrySet()) {
             String peerId = entry.getKey();
             if (!activePeers.containsKey(peerId) && !peerId.equals(agv.getAgvId())) {
@@ -368,7 +367,7 @@ public class BatchAssignmentUseCase {
     private synchronized void handleOrphanTasksFor(String deadPeerId) {
         Order orphanOrder = activeAssignments.remove(deadPeerId);
         if (orphanOrder != null) {
-            System.out.println("[ÓRFÃOS] Recuperando tarefa órfã " + orphanOrder.orderId() + " de " + deadPeerId + " para retransmissão.");
+            br.usp.agv.logging.SystemLogger.info("ÓRFÃOS", "Recuperando tarefa órfã " + orphanOrder.orderId() + " de " + Agv.getStaticNameFromId(deadPeerId) + " para retransmissão.", true);
             processedOrders.remove(orphanOrder.orderId());
             synchronized (pendingOrders) {
                 pendingOrders.add(orphanOrder);

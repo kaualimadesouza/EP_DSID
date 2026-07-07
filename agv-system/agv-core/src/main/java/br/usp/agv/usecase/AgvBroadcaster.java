@@ -21,7 +21,7 @@ public class AgvBroadcaster {
     }
 
     public void broadcastHeartbeat() {
-        System.out.println("[" + agv.getAgvId() + "] Enviando Heartbeat...");
+        br.usp.agv.logging.SystemLogger.debug(agv.getStaticName(), "Enviando Heartbeat...");
         agv.incrementAndGetLamportClock();
         messageBus.broadcast(AgvMessage.heartbeat(agv, 0));
     }

@@ -20,18 +20,18 @@ public class MovementUseCase {
                 agv.setStatus(AgvStatus.MOVING);
                 
                 // vai até o pickup
-                System.out.println("AGV " + agv.getAgvId() + " indo para PICKUP de " + order.orderId());
+                br.usp.agv.logging.SystemLogger.info(agv.getStaticName(), "indo para PICKUP de " + order.orderId(), true);
                 broadcaster.broadcastRouteClaimed(order.orderId(), toPickup);
                 followRoute(toPickup.waypoints());
 
-                System.out.println("AGV " + agv.getAgvId() + " chegou no PICKUP. Indo para DELIVERY...");
+                br.usp.agv.logging.SystemLogger.info(agv.getStaticName(), "chegou no PICKUP. Indo para DELIVERY...", true);
                 Thread.sleep(1000); // Simula carregar o lote
                 
                 // vai até o delivery
                 broadcaster.broadcastRouteClaimed(order.orderId(), toDelivery);
                 followRoute(toDelivery.waypoints());
 
-                System.out.println("AGV " + agv.getAgvId() + " concluiu entrega de " + order.orderId());
+                br.usp.agv.logging.SystemLogger.info(agv.getStaticName(), "concluiu entrega de " + order.orderId(), true);
                 agv.setStatus(AgvStatus.IDLE);
                 
                 broadcaster.broadcastOrderCompleted(order.orderId());

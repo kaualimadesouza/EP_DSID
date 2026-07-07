@@ -70,7 +70,7 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
 
     @Override
     public void onOrderAssigned(Order order) {
-        System.out.println("AGV " + agv.getAgvId() + " recebeu atribuição para " + order.orderId());
+        br.usp.agv.logging.SystemLogger.info(agv.getStaticName(), "recebeu atribuição para " + order.orderId(), true);
         
         // Calcula as duas partes da viagem
         Route toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), java.util.Set.of(), agv.getAgvId());

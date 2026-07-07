@@ -71,7 +71,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
                         java.net.InetSocketAddress address = new java.net.InetSocketAddress(packet.getAddress(), packet.getPort());
                         java.net.InetSocketAddress old = nameResolutionTable.put(senderId, address);
                         if (old == null || !old.equals(address)) {
-                            System.out.println("[RESOLUÇÃO DE NOMES] Mapeado: " + senderId + " -> " + address);
+                            br.usp.agv.logging.SystemLogger.debug("RESOLUÇÃO DE NOMES", "Mapeado: " + senderId + " -> " + address);
                         }
                     }
 
@@ -83,7 +83,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
                     // Simula perda de pacotes para testar SRM (exceto para mensagens internas SRM de NACK)
                     if (dropProbability > 0.0 && Math.random() < dropProbability) {
                         if (msg.type() != br.usp.agv.model.MessageType.NACK_REQUEST && msg.type() != br.usp.agv.model.MessageType.NACK_RESPONSE) {
-                            System.out.println("[SRM SIMULATOR] SIMULANDO PERDA: " + senderId + " seq " + msg.sequenceNumber() + " (" + msg.type() + ")");
+                            br.usp.agv.logging.SystemLogger.debug("SRM SIMULATOR", "SIMULANDO PERDA: " + senderId + " seq " + msg.sequenceNumber() + " (" + msg.type() + ")");
                             continue;
                         }
                     }
@@ -182,7 +182,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
         }
 
         if (found != null) {
-            System.out.println("[SRM] Re-enviando pacote perdido solicitado: " + targetId + " seq " + targetSeq);
+            br.usp.agv.logging.SystemLogger.debug("SRM", "Re-enviando pacote perdido solicitado: " + targetId + " seq " + targetSeq);
             AgvMessage response = AgvMessage.nackResponse(localSenderId != null ? localSenderId : "SYSTEM", 0, 0, found);
             rawBroadcast(response);
         }
@@ -192,17 +192,17 @@ public class UdpMessageBusAdapter implements MessageBusPort {
         try {
             AgvMessage lostMessage = mapper.convertValue(nackResponseMsg.payload().get("lostMessage"), AgvMessage.class);
             if (lostMessage != null) {
-                System.out.println("[SRM] Recuperado pacote perdido de " + lostMessage.senderId() + " seq " + lostMessage.sequenceNumber());
+                br.usp.agv.logging.SystemLogger.debug("SRM", "Recuperado pacote perdido de " + lostMessage.senderId() + " seq " + lostMessage.sequenceNumber());
                 processMessage(lostMessage);
             }
         } catch (Exception e) {
-            System.err.println("Erro ao converter mensagem retransmitida: " + e.getMessage());
+            br.usp.agv.logging.SystemLogger.error("SRM", "Erro ao converter mensagem retransmitida: " + e.getMessage(), e);
         }
     }
 
     private void sendNackRequest(String targetSenderId, int targetSeq) {
         if (localSenderId == null) return;
-        System.out.println("[SRM] Solicitando retransmissão (NACK): " + targetSenderId + " seq " + targetSeq);
+        br.usp.agv.logging.SystemLogger.debug("SRM", "Solicitando retransmissão (NACK): " + targetSenderId + " seq " + targetSeq);
         AgvMessage nack = AgvMessage.nackRequest(localSenderId, 0, 0, targetSenderId, targetSeq);
         rawBroadcast(nack);
     }

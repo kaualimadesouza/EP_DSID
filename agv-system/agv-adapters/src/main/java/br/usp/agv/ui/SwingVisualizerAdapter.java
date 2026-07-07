@@ -349,9 +349,8 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         synchronized (agvs) {
             this.agvs = new ArrayList<>(allAgvs);
             
-            // Limpa dados residuais de AGVs que saíram
+            // Limpa rotas apenas se o AGV realmente sumiu
             List<String> currentIds = allAgvs.stream().map(Agv::getAgvId).toList();
-            visualPositions.keySet().removeIf(id -> !currentIds.contains(id));
             synchronized (activeRoutes) {
                 activeRoutes.keySet().removeIf(id -> !currentIds.contains(id));
             }
