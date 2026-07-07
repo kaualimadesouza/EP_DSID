@@ -26,7 +26,7 @@ public class OrderGeneratorMain {
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
         // Listener para remover pedidos concluídos (atribuídos)
-        network.subscribe("orders", message -> {
+        network.subscribe("agv-system", message -> {
             if (message.type() == MessageType.ROUTE_CLAIMED) {
                 String orderId = (String) message.payload().get("orderId");
                 if (orderId != null && activeOrders.remove(orderId) != null) {
