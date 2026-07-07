@@ -101,6 +101,7 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
 
     @Override
     public void onOrderCompleted(String orderId) {
+        batchAssignment.onOrderCompleted(orderId);
         if (observer != null) {
             observer.onOrderCompleted(orderId);
         }
