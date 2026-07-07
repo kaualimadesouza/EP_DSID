@@ -84,6 +84,8 @@ public class VisualizerMain {
                     } else if (msg.type() == MessageType.ROUTE_CLAIMED) {
                         br.usp.agv.model.Route route = mapper.convertValue(msg.payload().get("route"), br.usp.agv.model.Route.class);
                         System.out.println("Visualizer: Recebeu ROTA de " + senderId);
+                        Position startPos = (route != null && !route.waypoints().isEmpty()) ? route.waypoints().get(0) : new Position(0,0);
+                        knownAgvs.computeIfAbsent(senderId, id -> new Agv(id, startPos));
                         ui.onRouteCalculated(senderId, route);
                     } else if (msg.type() == MessageType.ROUTE_RELEASED) {
                         System.out.println("Visualizer: ROTA LIBERADA por " + senderId);
