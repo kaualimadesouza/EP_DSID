@@ -32,7 +32,7 @@ public class VisualizerMain {
                     boolean changed = false;
                     
                     for (String agvId : lastSeen.keySet()) {
-                        if (now - lastSeen.get(agvId) > 15000) { // 15 segundos sem sinal
+                        if (now - lastSeen.get(agvId) > 60000) { // 60 segundos sem sinal
                             System.out.println("Visualizer: AGV " + agvId + " removido por inatividade.");
                             knownAgvs.remove(agvId);
                             lastSeen.remove(agvId);
