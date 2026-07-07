@@ -16,4 +16,5 @@ public interface WorldObserverPort {
     void onRouteReleased(String agvId);
     void onOrderCompleted(String orderId);
     void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders);
+    default void onLeaderChanged(String leaderId) {}
 }

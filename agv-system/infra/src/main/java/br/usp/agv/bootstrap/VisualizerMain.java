@@ -97,6 +97,9 @@ public class VisualizerMain {
                             System.out.println("Visualizer: PEDIDO CONCLUÍDO: " + orderId);
                             knownOrders.remove(orderId);
                             ui.onOrderCompleted(orderId);
+                        } else if (msg.type() == MessageType.COORDINATOR) {
+                            System.out.println("Visualizer: Novo LÍDER ativo: " + senderId);
+                            ui.onLeaderChanged(senderId);
                         }
                     }
                     

@@ -36,6 +36,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     private final JTextPane statusPane;
     private long lastStatusUpdate = 0;
+    private String activeLeaderId = null;
 
     public SwingVisualizerAdapter(int rows, int cols) {
         this.rows = rows;
@@ -131,6 +132,12 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         sb.append("<div style='background-color: #34495e; color: white; padding: 10px; border-radius: 5px;'>");
         sb.append("<h2 style='margin: 0; font-size: 16px;'>Monitor de Sistema</h2>");
         sb.append("<span style='font-size: 10px; opacity: 0.8;'>Grade: ").append(rows).append("x").append(cols).append("</span>");
+        if (activeLeaderId != null) {
+            String leaderName = br.usp.agv.model.Agv.getStaticNameFromId(activeLeaderId);
+            sb.append("<br><span style='font-size: 11px; color: #f1c40f;'>👑 Líder Ativo: <b>").append(leaderName).append("</b></span>");
+        } else {
+            sb.append("<br><span style='font-size: 11px; color: #bdc3c7;'>👑 Líder Ativo: <b>Nenhum</b></span>");
+        }
         sb.append("</div><br>");
         
         sb.append("<b style='font-size: 13px; color: #7f8c8d;'>AGVs ATIVOS</b><hr>");
@@ -196,12 +203,31 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             Point2D.Double p = visualPositions.get(agv.getAgvId());
             if (p == null) continue;
             
+            boolean isLeader = agv.getAgvId().equals(activeLeaderId);
+            
+            if (isLeader) {
+                // Desenha uma borda dourada / coroa de brilho
+                g.setColor(new Color(241, 196, 15, 80)); // Amarelo dourado semitransparente
+                g.fillOval((int)p.x + 4, (int)p.y + 4, cellSize - 8, cellSize - 8);
+            }
+            
             // Desenha o corpo do AGV
             g.setColor(new Color(52, 152, 219)); 
             g.fillOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
-            g.setColor(new Color(41, 128, 185));
+            
+            if (isLeader) {
+                g.setColor(new Color(241, 196, 15)); // Borda dourada
+            } else {
+                g.setColor(new Color(41, 128, 185));
+            }
             g.setStroke(new BasicStroke(2));
             g.drawOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
+            
+            // Desenha uma coroa sobre o líder
+            if (isLeader) {
+                g.setColor(new Color(241, 196, 15));
+                g.drawString("👑", (int)p.x + 1, (int)p.y + 13);
+            }
             
             // Desenha o "Nickname" acima do AGV (usa o nome estático curto para caber na tela)
             String id = br.usp.agv.model.Agv.getStaticNameFromId(agv.getAgvId());
@@ -357,6 +383,14 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         }
         synchronized (orders) {
             this.orders = new ArrayList<>(pendingOrders);
+        }
+        repaint();
+    }
+
+    @Override
+    public void onLeaderChanged(String leaderId) {
+        synchronized (this) {
+            this.activeLeaderId = leaderId;
         }
         repaint();
     }
