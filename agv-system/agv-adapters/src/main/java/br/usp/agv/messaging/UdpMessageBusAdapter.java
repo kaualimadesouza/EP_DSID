@@ -58,7 +58,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
 
     private void startListening() {
         new Thread(() -> {
-            byte[] buffer = new byte[1024 * 8];
+            byte[] buffer = new byte[65535];
             while (!socket.isClosed()) {
                 try {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
