@@ -108,11 +108,13 @@ public class BatchAssignmentUseCase {
             }
         }
 
-        if (currentLeaderId != null && !isLeader()) {
-            if (now - lastLeaderHeartbeatSeen > timeout) {
-                br.usp.agv.logging.SystemLogger.info("LÍDER", "Líder " + Agv.getStaticNameFromId(currentLeaderId) + " caiu (sem heartbeat por 10s). Iniciando eleição...", true);
-                currentLeaderId = null;
-                startElection();
+        if (currentLeaderId != null) {
+            if (!isLeader()) {
+                if (now - lastLeaderHeartbeatSeen > timeout) {
+                    br.usp.agv.logging.SystemLogger.info("LÍDER", "Líder " + Agv.getStaticNameFromId(currentLeaderId) + " caiu (sem heartbeat por 10s). Iniciando eleição...", true);
+                    currentLeaderId = null;
+                    startElection();
+                }
             }
         } else {
             // Sem líder estabelecido há mais de 5s desde o último contato
