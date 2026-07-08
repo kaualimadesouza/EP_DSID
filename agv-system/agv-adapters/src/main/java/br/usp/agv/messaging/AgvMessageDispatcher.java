@@ -74,6 +74,9 @@ public class AgvMessageDispatcher {
                 case COORDINATOR -> {
                     controller.onCoordinatorReceived(message.senderId());
                 }
+                case DEBUG_QUERY -> {
+                    controller.dumpMemory();
+                }
                 default -> br.usp.agv.logging.SystemLogger.debug("DISPATCHER", "Mensagem não suportada ou interna: " + message.type());
             }
         } catch (Throwable t) {

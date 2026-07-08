@@ -32,7 +32,15 @@ public class VisualizerMain {
                     boolean changed = false;
                     
                     for (String agvId : lastSeen.keySet()) {
-                        if (now - lastSeen.get(agvId) > 60000) { // 60 segundos sem sinal
+                        long idleTime = now - lastSeen.get(agvId);
+                        Agv agv = knownAgvs.get(agvId);
+                        if (agv != null && idleTime > 10000) {
+                            if (agv.getStatus() != br.usp.agv.model.AgvStatus.OFFLINE) {
+                                agv.setStatus(br.usp.agv.model.AgvStatus.OFFLINE);
+                                changed = true;
+                            }
+                        }
+                        if (idleTime > 60000) { // 60 segundos sem sinal
                             System.out.println("Visualizer: AGV " + agvId + " removido por inatividade.");
                             knownAgvs.remove(agvId);
                             lastSeen.remove(agvId);
@@ -82,6 +90,10 @@ public class VisualizerMain {
                             Object posObj = msg.payload().get("position");
                             Position newPos = mapper.convertValue(posObj, Position.class);
                             agv.setCurrentPosition(newPos);
+                            Object statusObj = msg.payload().get("status");
+                            if (statusObj != null) {
+                                agv.setStatus(br.usp.agv.model.AgvStatus.valueOf(statusObj.toString()));
+                            }
                             ui.onAgvMoved(senderId, newPos);
                         } else if (msg.type() == MessageType.ROUTE_CLAIMED) {
                             br.usp.agv.model.Route route = mapper.convertValue(msg.payload().get("route"), br.usp.agv.model.Route.class);

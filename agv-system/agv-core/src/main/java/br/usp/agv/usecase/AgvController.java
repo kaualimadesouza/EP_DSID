@@ -126,4 +126,9 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
     public void updateLamportClock(long receivedTimestamp) {
         agv.updateLamportClock(receivedTimestamp);
     }
+
+    @Override
+    public void dumpMemory() {
+        batchAssignment.dumpMemory();
+    }
 }

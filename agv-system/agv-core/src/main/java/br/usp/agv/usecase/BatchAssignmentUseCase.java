@@ -52,8 +52,8 @@ public class BatchAssignmentUseCase {
             try {
                 cleanDeadPeers();
                 monitorLeader();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Throwable t) {
+                br.usp.agv.logging.SystemLogger.error("MONITOR", "Erro no monitoramento periódico", t);
             }
         }, 3, 3, TimeUnit.SECONDS);
     }
@@ -93,15 +93,15 @@ public class BatchAssignmentUseCase {
         long timeout = 10000; // 10s
         long now = System.currentTimeMillis();
         
-        // Fail-Safe: Se não ouvirmos nada na rede nos últimos 6s,
+        // Fail-Safe: Se não ouvirmos nada na rede nos últimos 6s e houver outros nós ativos,
         // entra em modo Fail-Safe para evitar colisões
-        if (now - lastAnyPeerMessageTime > 6000) {
+        if (now - lastAnyPeerMessageTime > 6000 && !activePeers.isEmpty()) {
             if (agv.getStatus() == AgvStatus.MOVING) {
                 br.usp.agv.logging.SystemLogger.info("FAIL-SAFE", "Perda de rede detectada (silêncio de 6s). Parando AGV!", true);
                 agv.setStatus(AgvStatus.FAIL_SAFE);
             }
         } else {
-            // Rede recuperada
+            // Rede recuperada ou nenhum outro nó ativo
             if (agv.getStatus() == AgvStatus.FAIL_SAFE) {
                 br.usp.agv.logging.SystemLogger.info("FAIL-SAFE", "Conectividade restabelecida. Retomando movimentação.", true);
                 agv.setStatus(AgvStatus.MOVING);
@@ -154,19 +154,27 @@ public class BatchAssignmentUseCase {
             }
             electionTimeoutFuture = scheduler.schedule(() -> {
                 synchronized (this) {
-                    if (!okReceived) {
-                        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "Nenhum OK recebido de nós superiores. Assumindo coordenação.", true);
-                        becomeLeader();
-                    } else {
-                        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "OK recebido. Aguardando COORDINATOR...", false);
-                        // Timeout secundário para aguardar mensagem do novo líder
-                        scheduler.schedule(() -> {
-                            if (currentLeaderId == null && isElecting) {
-                                br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "COORDINATOR não recebido. Reiniciando eleição...", true);
-                                isElecting = false;
-                                startElection();
-                            }
-                        }, 5, TimeUnit.SECONDS);
+                    try {
+                        if (!okReceived) {
+                            br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "Nenhum OK recebido de nós superiores. Assumindo coordenação.", true);
+                            becomeLeader();
+                        } else {
+                            br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "OK recebido. Aguardando COORDINATOR...", false);
+                            // Timeout secundário para aguardar mensagem do novo líder
+                            scheduler.schedule(() -> {
+                                try {
+                                    if (currentLeaderId == null && isElecting) {
+                                        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "COORDINATOR não recebido. Reiniciando eleição...", true);
+                                        isElecting = false;
+                                        startElection();
+                                    }
+                                } catch (Throwable t) {
+                                    br.usp.agv.logging.SystemLogger.error("ELEIÇÃO", "Erro no timeout secundário de eleição", t);
+                                }
+                            }, 5, TimeUnit.SECONDS);
+                        }
+                    } catch (Throwable t) {
+                        br.usp.agv.logging.SystemLogger.error("ELEIÇÃO", "Erro no timeout de eleição", t);
                     }
                 }
             }, 2000, TimeUnit.MILLISECONDS);
@@ -210,7 +218,16 @@ public class BatchAssignmentUseCase {
 
     public void onCoordinatorReceived(String senderId) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
-        br.usp.agv.logging.SystemLogger.info("LÍDER", "COORDINATOR recebido de " + Agv.getStaticNameFromId(senderId) + ". Atualizando líder.", true);
+        String myStatic = agv.getStaticName();
+        String senderStatic = Agv.getStaticNameFromId(senderId);
+        
+        if (senderStatic.compareTo(myStatic) < 0) {
+            br.usp.agv.logging.SystemLogger.info("LÍDER", "COORDINATOR ignorado de " + senderStatic + " (ID inferior ao meu). Iniciando eleição...", true);
+            startElection();
+            return;
+        }
+        
+        br.usp.agv.logging.SystemLogger.info("LÍDER", "COORDINATOR recebido de " + senderStatic + ". Atualizando líder.", true);
         currentLeaderId = senderId;
         lastLeaderHeartbeatSeen = System.currentTimeMillis();
         isElecting = false;
@@ -265,6 +282,11 @@ public class BatchAssignmentUseCase {
 
             broadcaster.broadcastBatchProposal(batch);
             broadcaster.broadcastBatchAck(batch.batchId()); // Envia o ACK do líder para os backups na rede
+            
+            int required = batch.agvStates().size();
+            if (acks.size() >= required) {
+                executeBatch(batch);
+            }
         } catch (Throwable t) {
             br.usp.agv.logging.SystemLogger.error("LOTE", "ERRO CRÍTICO EM PROPOSE_BATCH", t);
         }
@@ -304,6 +326,7 @@ public class BatchAssignmentUseCase {
         // Remova para evitar processamento duplo
         if (proposedBatches.remove(batch.batchId()) == null) return;
 
+        br.usp.agv.logging.SystemLogger.info("REPLICAÇÃO", "Replicação total concluída para o lote: " + batch.batchId(), true);
         br.usp.agv.logging.SystemLogger.info("LOTE", "Executando lote: " + batch.batchId() + " com " + batch.orders().size() + " pedidos", true);
 
         List<Order> orders = new ArrayList<>(batch.orders());
@@ -385,5 +408,30 @@ public class BatchAssignmentUseCase {
     public void onOrderCompleted(String orderId) {
         activeAssignments.entrySet().removeIf(entry -> entry.getValue().orderId().equals(orderId));
         processedOrders.add(orderId);
+    }
+
+    public void dumpMemory() {
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "===== DUMP DE MEMÓRIA (" + agv.getStaticName() + ") =====", true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Líder Ativo: " + (currentLeaderId != null ? Agv.getStaticNameFromId(currentLeaderId) : "Nenhum"), true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Estado do AGV: " + agv.getStatus(), true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Posição Atual: " + agv.getCurrentPosition(), true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Peers Ativos: " + activePeers.keySet(), true);
+        
+        java.util.List<String> pendings = new java.util.ArrayList<>();
+        synchronized (pendingOrders) {
+            for (Order o : pendingOrders) {
+                pendings.add(o.orderId());
+            }
+        }
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Fila de Pendentes (pendingOrders): " + pendings, true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Pedidos Processados (processedOrders): " + processedOrders, true);
+        
+        java.util.List<String> assignments = new java.util.ArrayList<>();
+        for (Map.Entry<String, Order> entry : activeAssignments.entrySet()) {
+            assignments.add(Agv.getStaticNameFromId(entry.getKey()) + " -> " + entry.getValue().orderId());
+        }
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Atribuições Ativas (activeAssignments): " + assignments, true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Propostas de Lote (proposedBatches): " + proposedBatches.keySet(), true);
+        br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "=============================================", true);
     }
 }

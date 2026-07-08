@@ -204,18 +204,25 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             if (p == null) continue;
             
             boolean isLeader = agv.getAgvId().equals(activeLeaderId);
+            boolean isOffline = agv.getStatus() == br.usp.agv.model.AgvStatus.OFFLINE;
             
-            if (isLeader) {
+            if (isLeader && !isOffline) {
                 // Desenha uma borda dourada / coroa de brilho
                 g.setColor(new Color(241, 196, 15, 80)); // Amarelo dourado semitransparente
                 g.fillOval((int)p.x + 4, (int)p.y + 4, cellSize - 8, cellSize - 8);
             }
             
             // Desenha o corpo do AGV
-            g.setColor(new Color(52, 152, 219)); 
+            if (isOffline) {
+                g.setColor(new Color(189, 195, 199, 120)); // Cinza claro semi-transparente
+            } else {
+                g.setColor(new Color(52, 152, 219)); 
+            }
             g.fillOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
             
-            if (isLeader) {
+            if (isOffline) {
+                g.setColor(new Color(149, 165, 166, 120));
+            } else if (isLeader) {
                 g.setColor(new Color(241, 196, 15)); // Borda dourada
             } else {
                 g.setColor(new Color(41, 128, 185));
@@ -235,7 +242,11 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             g.drawString(id, textX + 1, textY + 1);
             
             // Texto principal
-            g.setColor(new Color(44, 62, 80));
+            if (isOffline) {
+                g.setColor(new Color(127, 143, 144, 150));
+            } else {
+                g.setColor(new Color(44, 62, 80));
+            }
             g.drawString(id, textX, textY);
         }
     }

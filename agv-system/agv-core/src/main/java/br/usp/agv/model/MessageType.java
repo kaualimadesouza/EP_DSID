@@ -24,5 +24,8 @@ public enum MessageType {
 
     // Controle SRM
     NACK_REQUEST,
-    NACK_RESPONSE
+    NACK_RESPONSE,
+    
+    // Debug
+    DEBUG_QUERY
 }

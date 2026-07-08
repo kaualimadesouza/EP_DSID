@@ -37,7 +37,19 @@ public class UdpMessageBusAdapter implements MessageBusPort {
         try {
             socket = new MulticastSocket(port);
             group = InetAddress.getByName(multicastAddress);
-            socket.joinGroup(group);
+            
+            // Habilita loopback local explicitamente para que processos na mesma máquina recebam
+            socket.setLoopbackMode(false);
+            
+            // Força o uso da interface de loopback para estabilidade local absoluta
+            java.net.NetworkInterface loopback = java.net.NetworkInterface.getByInetAddress(InetAddress.getByName("127.0.0.1"));
+            if (loopback != null) {
+                socket.setNetworkInterface(loopback);
+                socket.joinGroup(new java.net.InetSocketAddress(group, port), loopback);
+            } else {
+                socket.joinGroup(group);
+            }
+            
             startListening();
         } catch (IOException e) {
             throw new RuntimeException("Erro ao inicializar rede UDP", e);

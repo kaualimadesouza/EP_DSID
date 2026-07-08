@@ -26,4 +26,6 @@ public interface AgvController {
     void onCoordinatorReceived(String senderId);
 
     void updateLamportClock(long receivedTimestamp);
+
+    void dumpMemory();
 }

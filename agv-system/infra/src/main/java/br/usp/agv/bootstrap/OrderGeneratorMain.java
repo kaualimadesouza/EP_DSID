@@ -76,6 +76,10 @@ public class OrderGeneratorMain {
             } else if (input.startsWith("/clear")) {
                 activeOrders.clear();
                 System.out.println("Fila limpa.");
+            } else if (input.startsWith("/dump") || input.startsWith("/mem")) {
+                java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                network.broadcast(new br.usp.agv.model.AgvMessage("GENERATOR", generatorSeq++, 0, br.usp.agv.model.MessageType.DEBUG_QUERY, payload));
+                System.out.println("[GENERATOR] Solicitando dump de memória para todos os AGVs ativos...");
             }
             System.out.print("> ");
         }
