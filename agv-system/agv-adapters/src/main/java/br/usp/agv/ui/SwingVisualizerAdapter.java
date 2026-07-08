@@ -276,8 +276,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 }
             }
 
-            int hash = agvId.hashCode();
-            g.setColor(new Color((hash & 0xFF0000) >> 16, (hash & 0x00FF00) >> 8, hash & 0x0000FF, 80));
+            g.setColor(new Color(41, 128, 185, 100)); // Cor azul semi-transparente uniforme para todas as rotas
             
             for (int i = startIndex; i < route.waypoints().size() - 1; i++) {
                 Position from = route.waypoints().get(i);

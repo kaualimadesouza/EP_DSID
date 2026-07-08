@@ -40,12 +40,6 @@ public class VisualizerMain {
                                 changed = true;
                             }
                         }
-                        if (idleTime > 60000) { // 60 segundos sem sinal
-                            System.out.println("Visualizer: AGV " + agvId + " removido por inatividade.");
-                            knownAgvs.remove(agvId);
-                            lastSeen.remove(agvId);
-                            changed = true;
-                        }
                     }
                     
                     if (changed) {
@@ -86,6 +80,10 @@ public class VisualizerMain {
                     }
                     else if (!senderId.equals("VISUALIZER")) {
                         if (msg.type() == MessageType.HEARTBEAT) {
+                            String staticName = br.usp.agv.model.Agv.getStaticNameFromId(senderId);
+                            knownAgvs.keySet().removeIf(id -> !id.equals(senderId) && br.usp.agv.model.Agv.getStaticNameFromId(id).equals(staticName));
+                            lastSeen.keySet().removeIf(id -> !id.equals(senderId) && br.usp.agv.model.Agv.getStaticNameFromId(id).equals(staticName));
+
                             Agv agv = knownAgvs.computeIfAbsent(senderId, id -> new Agv(id, new Position(0,0)));
                             Object posObj = msg.payload().get("position");
                             Position newPos = mapper.convertValue(posObj, Position.class);
