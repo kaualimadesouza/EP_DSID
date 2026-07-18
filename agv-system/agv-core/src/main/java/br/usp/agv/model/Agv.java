@@ -7,8 +7,11 @@ public class Agv {
     private final String staticName;
     private final String sessionUuid;
     private final String agvId;
-    private Position currentPosition;
-    private AgvStatus status;
+    // volatile: lidos/escritos pela thread de movimento, pela thread de heartbeat e pelo
+    // scheduler de monitoramento de líder (BatchAssignmentUseCase) — sem isso, a transição
+    // para FAIL_SAFE não tem garantia de visibilidade para a thread de movimento (Safety).
+    private volatile Position currentPosition;
+    private volatile AgvStatus status;
     private Order currentOrder;    // null se ocioso
     private long lamportClock = 0;
 

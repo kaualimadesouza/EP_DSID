@@ -58,7 +58,13 @@ public class BatchAssignmentUseCase {
         }, 3, 3, TimeUnit.SECONDS);
     }
 
-    public void onHeartbeatReceived(String peerId, Position position, AgvStatus status) {
+    // synchronized: currentLeaderId/lastLeaderHeartbeatSeen/lastAnyPeerMessageTime/isElecting/
+    // timerRunning são tocados tanto pela thread única do processador de mensagens UDP quanto
+    // pela thread única do scheduler (cleanDeadPeers/monitorLeader/proposeBatch/timeouts de
+    // eleição). Sem um lock consistente em todos os métodos que leem/escrevem esses campos,
+    // a JMM não garante visibilidade entre essas duas threads (ex: uma eleição duplicada, ou
+    // um nó nunca "enxergar" que já existe líder).
+    public synchronized void onHeartbeatReceived(String peerId, Position position, AgvStatus status) {
         activePeers.put(peerId, new AgvSnapshot(peerId, position, status));
         lastAnyPeerMessageTime = System.currentTimeMillis();
         
@@ -67,7 +73,7 @@ public class BatchAssignmentUseCase {
         }
     }
 
-    private void cleanDeadPeers() {
+    private synchronized void cleanDeadPeers() {
         long timeout = 10000; // 10 segundos sem heartbeat
         long now = System.currentTimeMillis();
         
@@ -89,7 +95,7 @@ public class BatchAssignmentUseCase {
         }
     }
 
-    private void monitorLeader() {
+    private synchronized void monitorLeader() {
         long timeout = 10000; // 10s
         long now = System.currentTimeMillis();
         
@@ -136,7 +142,7 @@ public class BatchAssignmentUseCase {
         List<String> higherIds = new ArrayList<>();
         for (String peerId : activePeers.keySet()) {
             String peerStatic = Agv.getStaticNameFromId(peerId);
-            if (peerStatic.compareTo(myStaticName) > 0) {
+            if (compareStaticIds(peerStatic, myStaticName) > 0) {
                 higherIds.add(peerId);
             }
         }
@@ -162,14 +168,16 @@ public class BatchAssignmentUseCase {
                             br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "OK recebido. Aguardando COORDINATOR...", false);
                             // Timeout secundário para aguardar mensagem do novo líder
                             scheduler.schedule(() -> {
-                                try {
-                                    if (currentLeaderId == null && isElecting) {
-                                        br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "COORDINATOR não recebido. Reiniciando eleição...", true);
-                                        isElecting = false;
-                                        startElection();
+                                synchronized (this) {
+                                    try {
+                                        if (currentLeaderId == null && isElecting) {
+                                            br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "COORDINATOR não recebido. Reiniciando eleição...", true);
+                                            isElecting = false;
+                                            startElection();
+                                        }
+                                    } catch (Throwable t) {
+                                        br.usp.agv.logging.SystemLogger.error("ELEIÇÃO", "Erro no timeout secundário de eleição", t);
                                     }
-                                } catch (Throwable t) {
-                                    br.usp.agv.logging.SystemLogger.error("ELEIÇÃO", "Erro no timeout secundário de eleição", t);
                                 }
                             }, 5, TimeUnit.SECONDS);
                         }
@@ -192,36 +200,36 @@ public class BatchAssignmentUseCase {
         recoverOrphanTasks();
     }
 
-    public void onElectionReceived(String senderId) {
+    public synchronized void onElectionReceived(String senderId) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
         String myStatic = agv.getStaticName();
         String senderStatic = Agv.getStaticNameFromId(senderId);
         
         br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "ELECTION recebida de " + Agv.getStaticNameFromId(senderId), false);
-        if (myStatic.compareTo(senderStatic) > 0) {
+        if (compareStaticIds(myStatic, senderStatic) > 0) {
             br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "Enviando OK para " + Agv.getStaticNameFromId(senderId), false);
             broadcaster.broadcastOk();
             startElection();
         }
     }
 
-    public void onOkReceived(String senderId) {
+    public synchronized void onOkReceived(String senderId) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
         String myStatic = agv.getStaticName();
         String senderStatic = Agv.getStaticNameFromId(senderId);
         
-        if (senderStatic.compareTo(myStatic) > 0) {
+        if (compareStaticIds(senderStatic, myStatic) > 0) {
             br.usp.agv.logging.SystemLogger.info("ELEIÇÃO", "OK recebido de " + Agv.getStaticNameFromId(senderId), false);
             okReceived = true;
         }
     }
 
-    public void onCoordinatorReceived(String senderId) {
+    public synchronized void onCoordinatorReceived(String senderId) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
         String myStatic = agv.getStaticName();
         String senderStatic = Agv.getStaticNameFromId(senderId);
         
-        if (senderStatic.compareTo(myStatic) < 0) {
+        if (compareStaticIds(senderStatic, myStatic) < 0) {
             br.usp.agv.logging.SystemLogger.info("LÍDER", "COORDINATOR ignorado de " + senderStatic + " (ID inferior ao meu). Iniciando eleição...", true);
             startElection();
             return;
@@ -233,11 +241,11 @@ public class BatchAssignmentUseCase {
         isElecting = false;
     }
 
-    public boolean isLeader() {
+    public synchronized boolean isLeader() {
         return agv.getAgvId().equals(currentLeaderId);
     }
 
-    public void onNewOrder(Order order) {
+    public synchronized void onNewOrder(Order order) {
         // Ignora se já estamos processando ou processamos esse pedido
         if (processedOrders.contains(order.orderId())) return;
         
@@ -256,7 +264,7 @@ public class BatchAssignmentUseCase {
         }
     }
 
-    private void proposeBatch() {
+    private synchronized void proposeBatch() {
         try {
             timerRunning = false;
             List<Order> batchOrders;
@@ -292,7 +300,7 @@ public class BatchAssignmentUseCase {
         }
     }
 
-    public void onBatchProposal(Batch batch) {
+    public synchronized void onBatchProposal(Batch batch) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
         
         // Usa putIfAbsent para não sobrescrever o conjunto se o líder já começou a coletar ACKs
@@ -307,7 +315,7 @@ public class BatchAssignmentUseCase {
         onBatchAck(agv.getAgvId(), batch.batchId());
     }
 
-    public void onBatchAck(String senderId, String batchId) {
+    public synchronized void onBatchAck(String senderId, String batchId) {
         lastAnyPeerMessageTime = System.currentTimeMillis();
         Set<String> acks = receivedAcks.get(batchId);
         if (acks == null) return;
@@ -357,7 +365,38 @@ public class BatchAssignmentUseCase {
         }
     }
 
-    private static String getBestAgvId(Order order, Map<String, AgvSnapshot> states) {
+    /**
+     * Compara IDs estáticos de AGV para o critério de "maior ID vence" do Bully.
+     * String.compareTo puro falha com nomes tipo "AGV-10" vs "AGV-9" (compara caractere a
+     * caractere, então "AGV-10" < "AGV-9" porque '1' < '9') — só passa a comparar numericamente
+     * quando os dois nomes têm o mesmo prefixo e terminam em número; do contrário, cai de volta
+     * para lexicográfico (preserva o comportamento para nomes como "Alpha"/"Beta"/"Gamma").
+     */
+    static int compareStaticIds(String a, String b) {
+        Integer numA = trailingNumber(a);
+        Integer numB = trailingNumber(b);
+        if (numA != null && numB != null) {
+            String prefixA = a.substring(0, a.length() - String.valueOf(numA).length());
+            String prefixB = b.substring(0, b.length() - String.valueOf(numB).length());
+            if (prefixA.equals(prefixB)) {
+                return Integer.compare(numA, numB);
+            }
+        }
+        return a.compareTo(b);
+    }
+
+    static Integer trailingNumber(String s) {
+        int i = s.length();
+        while (i > 0 && Character.isDigit(s.charAt(i - 1))) i--;
+        if (i == s.length()) return null;
+        try {
+            return Integer.parseInt(s.substring(i));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    static String getBestAgvId(Order order, Map<String, AgvSnapshot> states) {
         String bestAgvId = null;
         int minDistance = Integer.MAX_VALUE;
 
@@ -406,7 +445,9 @@ public class BatchAssignmentUseCase {
     }
 
     public java.util.Set<String> getActivePeerIds() {
-        return activePeers.keySet();
+        // Cópia imutável, não a keySet() viva do mapa interno: quem chama isso não deveria
+        // conseguir remover/limpar entradas de activePeers por acidente através do retorno.
+        return java.util.Set.copyOf(activePeers.keySet());
     }
 
     public void onOrderCompleted(String orderId) {
@@ -414,7 +455,7 @@ public class BatchAssignmentUseCase {
         processedOrders.add(orderId);
     }
 
-    public void dumpMemory() {
+    public synchronized void dumpMemory() {
         br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "===== DUMP DE MEMÓRIA (" + agv.getStaticName() + ") =====", true);
         br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Líder Ativo: " + (currentLeaderId != null ? Agv.getStaticNameFromId(currentLeaderId) : "Nenhum"), true);
         br.usp.agv.logging.SystemLogger.info("DEBUG-MEM", "Estado do AGV: " + agv.getStatus(), true);
