@@ -15,6 +15,8 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
     
     private WorldObserverPort observer;
 
+    private final java.util.Map<String, Route> activePeerRoutes = new java.util.concurrent.ConcurrentHashMap<>();
+
     public AgvController(Agv agv, BatchAssignmentUseCase batchAssignment, MovementUseCase movement, 
                          PathfinderPort pathfinder, AgvBroadcaster broadcaster) {
         this.agv = agv;
@@ -72,9 +74,32 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
     public void onOrderAssigned(Order order) {
         br.usp.agv.logging.SystemLogger.info(agv.getStaticName(), "recebeu atribuição para " + order.orderId(), true);
         
-        // Calcula as duas partes da viagem
-        Route toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), java.util.Set.of(), agv.getAgvId());
-        Route toDelivery = pathfinder.calculateRoute(order.pickup(), order.delivery(), java.util.Set.of(), agv.getAgvId());
+        // Limpa qualquer rota órfã de robôs que já caíram / morreram
+        java.util.Set<String> activeIds = batchAssignment.getActivePeerIds();
+        activePeerRoutes.keySet().retainAll(activeIds);
+
+        // Coleta todas as posições atualmente reservadas por outros robôs ativos
+        java.util.Set<Position> routeObstacles = new java.util.HashSet<>();
+        for (java.util.Map.Entry<String, Route> entry : activePeerRoutes.entrySet()) {
+            if (!entry.getKey().equals(agv.getAgvId())) {
+                routeObstacles.addAll(entry.getValue().waypoints());
+            }
+        }
+
+        Route toPickup = null;
+        try {
+            toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), routeObstacles, agv.getAgvId());
+        } catch (Exception e) {
+            // Fallback se estiver bloqueado pelas rotas ativas: calcula sem obstáculos dinâmicos
+            toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), java.util.Set.of(), agv.getAgvId());
+        }
+
+        Route toDelivery = null;
+        try {
+            toDelivery = pathfinder.calculateRoute(order.pickup(), order.delivery(), routeObstacles, agv.getAgvId());
+        } catch (Exception e) {
+            toDelivery = pathfinder.calculateRoute(order.pickup(), order.delivery(), java.util.Set.of(), agv.getAgvId());
+        }
 
         if (movement != null) {
             movement.executeOrder(order, toPickup, toDelivery);
@@ -87,6 +112,9 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
 
     @Override
     public void onRouteClaimed(String agvId, String orderId, Route route) {
+        if (!agvId.equals(agv.getAgvId())) {
+            activePeerRoutes.put(agvId, route);
+        }
         if (observer != null) {
             observer.onRouteCalculated(agvId, route);
         }
@@ -94,6 +122,7 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
 
     @Override
     public void onRouteReleased(String agvId) {
+        activePeerRoutes.remove(agvId);
         if (observer != null) {
             observer.onRouteReleased(agvId);
         }
@@ -102,6 +131,8 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
     @Override
     public void onOrderCompleted(String orderId) {
         batchAssignment.onOrderCompleted(orderId);
+        // Também limpa qualquer rota associada ao pedido que concluiu
+        activePeerRoutes.values().removeIf(route -> route.routeId().contains(orderId));
         if (observer != null) {
             observer.onOrderCompleted(orderId);
         }

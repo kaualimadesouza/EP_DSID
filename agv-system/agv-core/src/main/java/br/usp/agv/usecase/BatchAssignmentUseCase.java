@@ -405,6 +405,10 @@ public class BatchAssignmentUseCase {
         }
     }
 
+    public java.util.Set<String> getActivePeerIds() {
+        return activePeers.keySet();
+    }
+
     public void onOrderCompleted(String orderId) {
         activeAssignments.entrySet().removeIf(entry -> entry.getValue().orderId().equals(orderId));
         processedOrders.add(orderId);
