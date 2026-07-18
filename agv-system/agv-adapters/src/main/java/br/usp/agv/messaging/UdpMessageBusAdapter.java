@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Adaptador de Mensageria usando UDP Multicast para comunicação P2P.
+ * Implementado em cima de localhost
  */
 public class UdpMessageBusAdapter implements MessageBusPort {
 
@@ -22,27 +22,24 @@ public class UdpMessageBusAdapter implements MessageBusPort {
     private InetAddress group;
     
     private String localSenderId;
-    private double dropProbability = 0.0; // Probability of dropping incoming messages (for testing)
 
     private final List<Consumer<AgvMessage>> handlers = new java.util.ArrayList<>();
     private final java.util.Map<String, java.net.InetSocketAddress> nameResolutionTable = new java.util.concurrent.ConcurrentHashMap<>();
 
-    // SRM protocol state
+    // SRM
     private final java.util.Map<String, Integer> lastSeenSequences = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, java.util.Map<Integer, AgvMessage>> outOfOrderBuffers = new java.util.concurrent.ConcurrentHashMap<>();
     private final List<AgvMessage> messageHistory = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
     private static final int HISTORY_LIMIT = 200;
 
-    // Retransmissão de NACK: sem isso, um único NACK_REQUEST ou NACK_RESPONSE perdido
-    // (perfeitamente possível em UDP) travava o peer para sempre esperando por aquela sequência.
+    // Retransmissão de NACK
     private final java.util.Set<String> inFlightNacks = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final java.util.concurrent.ScheduledExecutorService nackScheduler =
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
     private static final int MAX_NACK_RETRIES = 5;
     private static final long NACK_RETRY_DELAY_MS = 1500;
 
-    // Fila de mensagens recebidas: a thread do socket só enfileira, nunca processa,
-    // para que um handler lento nunca atrase o dreno do socket (e cause perda de pacote pelo SO).
+    // Fila de mensagens recebidas: a thread do socket só enfileira
     private final java.util.concurrent.BlockingQueue<AgvMessage> inboundQueue = new java.util.concurrent.LinkedBlockingQueue<>();
 
     // Última vez que cada sender apareceu no controle de sequência do SRM, usado só para
@@ -77,8 +74,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
 
     /**
      * Remove periodicamente o estado de SRM (lastSeenSequences/outOfOrderBuffers) de senders
-     * que não aparecem há muito tempo — sem isso, um peer que reinicia com uma sessão nova
-     * (novo UUID) deixa para trás entradas órfãs que nunca mais são usadas nem liberadas.
+     * que não aparecem há muito tempo
      */
     private void startSrmStateCleanup() {
         nackScheduler.scheduleAtFixedRate(() -> {
@@ -98,19 +94,8 @@ public class UdpMessageBusAdapter implements MessageBusPort {
         this.localSenderId = localSenderId;
     }
 
-    public void setDropProbability(double dropProbability) {
-        this.dropProbability = dropProbability;
-    }
-
-    public java.util.Map<String, java.net.InetSocketAddress> getNameResolutionTable() {
-        return java.util.Collections.unmodifiableMap(nameResolutionTable);
-    }
-
     private void startListening() {
-        // Thread dedicada exclusivamente a drenar o socket o mais rápido possível.
-        // Processamento de mensagem (locks, I/O de log, etc.) nunca deve rodar aqui:
-        // se atrasar, o buffer de recepção do SO pode encher e descartar pacotes
-        // silenciosamente, um tipo de perda que o SRM (nível de aplicação) não detecta.
+        // Thread dedicada exclusivamente a ler o socket o mais rápido possível.
         new Thread(() -> {
             byte[] buffer = new byte[65535];
             while (!socket.isClosed()) {
@@ -119,7 +104,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
                     socket.receive(packet);
                     AgvMessage msg = mapper.readValue(packet.getData(), 0, packet.getLength(), AgvMessage.class);
 
-                    // Resolução de Nomes Flat
+                    // Resolução de Nomes
                     String senderId = msg.senderId();
                     if (senderId != null && !senderId.equals("SYSTEM") && !senderId.equals("GENERATOR")) {
                         java.net.InetSocketAddress address = new java.net.InetSocketAddress(packet.getAddress(), packet.getPort());
@@ -129,17 +114,9 @@ public class UdpMessageBusAdapter implements MessageBusPort {
                         }
                     }
 
-                    // Ignora mensagens enviadas por si mesmo para evitar auto-processamento infinito
+                    // Ignora mensagens enviadas por si mesmo
                     if (localSenderId != null && localSenderId.equals(senderId)) {
                         continue;
-                    }
-
-                    // Simula perda de pacotes para testar SRM (exceto para mensagens internas SRM de NACK)
-                    if (dropProbability > 0.0 && Math.random() < dropProbability) {
-                        if (msg.type() != br.usp.agv.model.MessageType.NACK_REQUEST && msg.type() != br.usp.agv.model.MessageType.NACK_RESPONSE) {
-                            br.usp.agv.logging.SystemLogger.debug("SRM SIMULATOR", "SIMULANDO PERDA: " + senderId + " seq " + msg.sequenceNumber() + " (" + msg.type() + ")");
-                            continue;
-                        }
                     }
 
                     inboundQueue.add(msg);
@@ -183,16 +160,9 @@ public class UdpMessageBusAdapter implements MessageBusPort {
             msg.type() == br.usp.agv.model.MessageType.COORDINATOR ||
             msg.type() == br.usp.agv.model.MessageType.ROUTE_CLAIMED ||
             msg.type() == br.usp.agv.model.MessageType.ROUTE_RELEASED ||
-            msg.type() == br.usp.agv.model.MessageType.ORDER_COMPLETED) {
-            deliverMessage(msg);
-            return;
-        }
-
-        // Mensagens do sistema (SYSTEM) e do gerador de pedidos (GENERATOR) não têm controle
-        // estrito de sequência: nenhum dos dois tem UUID de sessão como os AGVs, então se o
-        // processo reiniciar (contador de sequência volta a 1), os AGVs que já viram números
-        // mais altos passariam a descartar todo NEW_ORDER/DEBUG_QUERY novo como "pacote antigo".
-        if (msg.senderId().equals("SYSTEM") || msg.senderId().equals("GENERATOR")) {
+            msg.type() == br.usp.agv.model.MessageType.ORDER_COMPLETED ||
+            msg.senderId().equals("SYSTEM") ||
+            msg.senderId().equals("GENERATOR")) {
             deliverMessage(msg);
             return;
         }
@@ -282,10 +252,8 @@ public class UdpMessageBusAdapter implements MessageBusPort {
     }
 
     /**
-     * Solicita retransmissão de uma sequência perdida, com retry e backoff fixo.
-     * Sem isso, um único NACK_REQUEST ou NACK_RESPONSE perdido em trânsito (ou uma mensagem já
-     * expirada do histórico do remetente) travaria o buffer fora-de-ordem deste peer para sempre,
-     * já que o protocolo original só pedia a retransmissão uma única vez.
+     * Solicita retransmissão de uma sequência perdida, com retry e backoff fixo,
+     * correção após perceber que o protocolo original só pedia a retransmissão uma única vez.
      */
     private void attemptNack(String targetSenderId, int targetSeq, int attempt) {
         String key = targetSenderId + ":" + targetSeq;
@@ -367,10 +335,7 @@ public class UdpMessageBusAdapter implements MessageBusPort {
     @Override
     public void broadcast(AgvMessage message) {
         // Armazena no histórico de mensagens enviadas para responder a NACKs futuros.
-        // HEARTBEAT é isento de SRM (processMessage entrega direto, sem checar sequência),
-        // então nunca é alvo de um NACK_REQUEST — guardá-lo aqui só desperdiça espaço do
-        // buffer de HISTORY_LIMIT mensagens, fazendo mensagens que IMPORTAM para o SRM
-        // (BATCH_PROPOSAL, BATCH_ACK, NEW_ORDER) expirarem mais rápido do histórico.
+        // HEARTBEAT é isento de SRM, entao priorizamos as mensagens que realmente importam
         boolean precisaHistorico = message.type() != br.usp.agv.model.MessageType.NACK_REQUEST
                 && message.type() != br.usp.agv.model.MessageType.NACK_RESPONSE
                 && message.type() != br.usp.agv.model.MessageType.HEARTBEAT;

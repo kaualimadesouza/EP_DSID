@@ -67,14 +67,4 @@ public class AgvBroadcaster {
         long clock = agv.incrementAndGetLamportClock();
         messageBus.broadcast(AgvMessage.coordinator(agv.getAgvId(), 0, clock));
     }
-
-    public void broadcastNackRequest(String targetSenderId, int targetSeq) {
-        long clock = agv.incrementAndGetLamportClock();
-        messageBus.broadcast(AgvMessage.nackRequest(agv.getAgvId(), 0, clock, targetSenderId, targetSeq));
-    }
-
-    public void broadcastNackResponse(AgvMessage lostMessage) {
-        long clock = agv.incrementAndGetLamportClock();
-        messageBus.broadcast(AgvMessage.nackResponse(agv.getAgvId(), 0, clock, lostMessage));
-    }
 }

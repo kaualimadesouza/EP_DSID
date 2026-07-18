@@ -7,9 +7,7 @@ import java.util.Set;
 
 public interface PathfinderPort {
 
-    /**
-     * Calcula a rota mais curta de origin até destination evitando posições ocupadas.
-     */
+    // Calcula a rota mais curta da origem até o destino evitando posições ocupadas
     Route calculateRoute(Position origin, Position destination,
                          Set<Position> occupied, String agvId);
 }

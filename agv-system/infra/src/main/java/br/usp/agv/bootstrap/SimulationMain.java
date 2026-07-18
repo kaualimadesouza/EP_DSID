@@ -17,10 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Simulador Local (Monolito, Sandbox).
- * Cria múltiplos AGVs no mesmo processo usando comunicação em memória ao invés de rede.
- */
+// Simulador Local que cria múltiplos AGVs no mesmo processo usando comunicação em memória ao invés de rede
 public class SimulationMain {
     public static void main(String[] args) {
         int rows = 15;

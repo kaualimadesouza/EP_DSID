@@ -15,7 +15,8 @@ import java.util.Collections;
 import java.util.Scanner;
 
 /**
- * Nó único AGV
+ * Nó único AGV (processo independente)
+ * Monta manualmente todas as peças (messageria, pathfinder, use cases, controller)
  */
 public class AgvNodeMain {
     public static void main(String[] args) {
@@ -27,7 +28,7 @@ public class AgvNodeMain {
 
         System.out.println("Iniciando Nó AGV (Estático): " + staticName + " em (" + startX + "," + startY + ") Grid: " + gridWidth + "x" + gridHeight);
 
-        // Infra
+        // Adapters
         GridGraphAdapter world = new GridGraphAdapter(gridWidth, gridHeight, Collections.emptySet());
         AStarPathfinderAdapter pathfinder = new AStarPathfinderAdapter(world);
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();

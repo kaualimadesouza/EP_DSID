@@ -9,10 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/**
- * Barramento de mensagens em memória para testes locais e simulação monolítica.
- * Suporta múltiplos inscritos por tópico.
- */
+// Mensagens em memória para testes locais e simulação centralizada
 public class InMemoryMessageBus implements MessageBusPort {
 
     private final Map<String, List<Consumer<AgvMessage>>> handlers = new ConcurrentHashMap<>();

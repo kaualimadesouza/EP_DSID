@@ -60,10 +60,7 @@ public class BatchAssignmentUseCase {
 
     // synchronized: currentLeaderId/lastLeaderHeartbeatSeen/lastAnyPeerMessageTime/isElecting/
     // timerRunning são tocados tanto pela thread única do processador de mensagens UDP quanto
-    // pela thread única do scheduler (cleanDeadPeers/monitorLeader/proposeBatch/timeouts de
-    // eleição). Sem um lock consistente em todos os métodos que leem/escrevem esses campos,
-    // a JMM não garante visibilidade entre essas duas threads (ex: uma eleição duplicada, ou
-    // um nó nunca "enxergar" que já existe líder).
+    // pela thread única do scheduler (cleanDeadPeers, monitorLeader, proposeBatch e timeouts de eleição)
     public synchronized void onHeartbeatReceived(String peerId, Position position, AgvStatus status) {
         activePeers.put(peerId, new AgvSnapshot(peerId, position, status));
         lastAnyPeerMessageTime = System.currentTimeMillis();
@@ -366,11 +363,9 @@ public class BatchAssignmentUseCase {
     }
 
     /**
-     * Compara IDs estáticos de AGV para o critério de "maior ID vence" do Bully.
-     * String.compareTo puro falha com nomes tipo "AGV-10" vs "AGV-9" (compara caractere a
-     * caractere, então "AGV-10" < "AGV-9" porque '1' < '9') — só passa a comparar numericamente
-     * quando os dois nomes têm o mesmo prefixo e terminam em número; do contrário, cai de volta
-     * para lexicográfico (preserva o comportamento para nomes como "Alpha"/"Beta"/"Gamma").
+     * Critério de maior ID
+     * só passa a comparar numericamente quando os dois nomes têm o mesmo prefixo e terminam em número (para que "10" > "9)
+     * senão, cai de volta para lexicográfico (preserva o comportamento para nomes como "Alpha"/"Beta"/"Gamma").
      */
     static int compareStaticIds(String a, String b) {
         Integer numA = trailingNumber(a);

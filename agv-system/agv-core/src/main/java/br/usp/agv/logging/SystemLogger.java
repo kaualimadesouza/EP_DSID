@@ -12,7 +12,6 @@ public class SystemLogger {
 
     static {
         try {
-            // Abre o arquivo de log no modo append
             fileWriter = new PrintWriter(new FileWriter("agv-system.log", true), true);
         } catch (IOException e) {
             System.err.println("Falha ao inicializar arquivo de log: " + e.getMessage());
@@ -46,7 +45,6 @@ public class SystemLogger {
         }
         
         if (printToConsole) {
-            // Limpa a linha atual via ANSI escape e imprime
             System.out.print("\r\033[K"); 
             System.out.println("[" + tag + "] " + message);
             System.out.print("> "); 

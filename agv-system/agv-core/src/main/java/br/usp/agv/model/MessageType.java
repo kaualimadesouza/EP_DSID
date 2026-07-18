@@ -1,7 +1,7 @@
 package br.usp.agv.model;
 
 public enum MessageType {
-    // Entrada de pedido (Pub/Sub)
+    // Entrada de pedido
     NEW_ORDER,
 
     // Acordo de lote (Total Ordering)
@@ -12,7 +12,6 @@ public enum MessageType {
     ROUTE_CLAIMED,      // "reservei esse caminho (manda a rota)"
     ROUTE_RELEASED,     // "terminei, caminho livre"
 
-    // Conecta lista de peers, keep-alive
     HEARTBEAT,
     
     ORDER_COMPLETED,
@@ -25,7 +24,7 @@ public enum MessageType {
     // Controle SRM
     NACK_REQUEST,
     NACK_RESPONSE,
-    
+
     // Debug
     DEBUG_QUERY
 }

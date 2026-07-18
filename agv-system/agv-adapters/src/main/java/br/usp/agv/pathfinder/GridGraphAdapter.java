@@ -23,12 +23,8 @@ public class GridGraphAdapter implements WorldMapPort {
         this.staticObstacles = staticObstacles;
     }
 
-    /**
-     * Gera um grafo navegável sem posições onde estão obstáculos estáticos e dinâmicos.
-     *
-     * @param dynamicObstacles posições ocupadas por outros AGVs no momento
-     * @return grafo navegável
-     */
+    // Gera um grafo navegável sem posições onde estão obstáculos estáticos e dinâmicos.
+    // dynamicObstacles: posições ocupadas por outros AGVs no momento
     public Graph<Position, DefaultEdge> build(Set<Position> dynamicObstacles) {
         Graph<Position, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
 

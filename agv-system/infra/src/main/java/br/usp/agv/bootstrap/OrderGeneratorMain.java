@@ -15,16 +15,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Entra manualmente com pedidos por console -- com implementação de broker simulado
- */
+// Entra manualmente com pedidos por console
 public class OrderGeneratorMain {
     private static final Map<String, Order> activeOrders = new ConcurrentHashMap<>();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     // AtomicInteger: incrementado tanto pela thread principal (console) quanto pela thread
-    // de retransmissão agendada (scheduleAtFixedRate) — um simples "int" não thread-safe
-    // podia gerar dois envios com o MESMO número de sequência, fazendo o SRM do lado
-    // receptor descartar um deles como "duplicata" mesmo sendo um pedido diferente.
+    // de retransmissão agendada, pois um simples "int" não thread-safe
+    // poderia gerar dois envios com o MESMO número de sequência, fazendo o SRM do lado
+    // receptor descartar um deles mesmo sendo um pedido diferente.
     private static final AtomicInteger generatorSeq = new AtomicInteger(1);
     private static int gridWidth = 15;
     private static int gridHeight = 15;
@@ -37,20 +35,9 @@ public class OrderGeneratorMain {
             } catch (NumberFormatException ignored) {}
         }
 
-        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
+        UdpMessageBusAdapter network = getUdpMessageBusAdapter();
 
-        // Listener para remover pedidos concluídos (atribuídos)
-        network.subscribe("agv-system", message -> {
-            if (message.type() == MessageType.ROUTE_CLAIMED) {
-                String orderId = (String) message.payload().get("orderId");
-                if (orderId != null && activeOrders.remove(orderId) != null) {
-                    System.out.println("\n[BROKER] Pedido " + orderId + " confirmado e removido da fila de retransmissão.");
-                    System.out.print("> "); // Re-imprime o prompt
-                }
-            }
-        });
-
-        // Thread de re-transmissão (Simula persistência do MOM)
+        // Thread de re-transmissão
         scheduler.scheduleAtFixedRate(() -> {
             if (activeOrders.isEmpty()) return;
             
@@ -88,6 +75,21 @@ public class OrderGeneratorMain {
             }
             System.out.print("> ");
         }
+    }
+
+    private static UdpMessageBusAdapter getUdpMessageBusAdapter() {
+        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
+
+        // Listener para remover pedidos concluídos (atribuídos)
+        network.subscribe("agv-system", message -> {
+            if (message.type() == MessageType.ROUTE_CLAIMED) {
+                String orderId = (String) message.payload().get("orderId");
+                if (orderId != null && activeOrders.remove(orderId) != null) {
+                    System.out.println("\n[GENERATOR] Pedido " + orderId + " confirmado e removido da fila de retransmissão.");
+                }
+            }
+        });
+        return network;
     }
 
     private static void handleMultiOrder(UdpMessageBusAdapter network, String input) {

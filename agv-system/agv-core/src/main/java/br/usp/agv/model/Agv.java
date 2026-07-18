@@ -4,12 +4,11 @@ import java.util.UUID;
 
 public class Agv {
 
-    private final String staticName;
-    private final String sessionUuid;
+    private final String staticName; // nome de apresentacao
+    private final String sessionUuid; // ID gerado ao ligar
     private final String agvId;
-    // volatile: lidos/escritos pela thread de movimento, pela thread de heartbeat e pelo
-    // scheduler de monitoramento de líder (BatchAssignmentUseCase) — sem isso, a transição
-    // para FAIL_SAFE não tem garantia de visibilidade para a thread de movimento (Safety).
+    // volatile: as threads locais de movimento, heartbeat
+    // scheduler precisam ler o valor corrente compartilhado da posicao e status (sem salvar copia em cache)
     private volatile Position currentPosition;
     private volatile AgvStatus status;
     private Order currentOrder;    // null se ocioso
@@ -81,4 +80,3 @@ public class Agv {
         return id;
     }
 }
-

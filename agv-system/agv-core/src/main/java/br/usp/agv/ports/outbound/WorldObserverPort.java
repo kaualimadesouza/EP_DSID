@@ -6,9 +6,7 @@ import br.usp.agv.model.Position;
 
 import java.util.List;
 
-/**
- * Porta para observadores externos que desejam visualizar o estado do sistema.
- */
+// Porta para observadores externos que desejam visualizar o estado do sistema
 public interface WorldObserverPort {
     void onAgvMoved(String agvId, Position newPosition);
     void onOrderCreated(Order order);

@@ -23,7 +23,7 @@ public class VisualizerMain {
         Map<String, Long> lastSeen = new ConcurrentHashMap<>(); // Timestamp do último sinal
         Map<String, Order> knownOrders = new ConcurrentHashMap<>();
 
-        // Thread para limpar AGVs inativos (Timeout de 5 segundos)
+        // Thread para limpar AGVs inativos
         new Thread(() -> {
             while (true) {
                 try {
@@ -68,7 +68,7 @@ public class VisualizerMain {
                         System.out.println("Visualizer: Recebeu NEW_ORDER de " + senderId);
                         String id = (String) msg.payload().get("orderId");
 
-                        // Deserialização segura das posições
+                        // Deserializa as posições
                         Position pickup = mapper.convertValue(msg.payload().get("pickup"), Position.class);
                         Position delivery = mapper.convertValue(msg.payload().get("delivery"), Position.class);
 

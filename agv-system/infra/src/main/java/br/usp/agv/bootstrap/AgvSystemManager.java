@@ -4,9 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-/**
- * Orquestra a execução de múltiplos processos (Nodes, Gerador e Visualizador).
- */
+// Orquestrador para a execução de múltiplos processos (Nodes, Gerador e Visualizador), ponto de entrada do projeto
 public class AgvSystemManager {
     private static final List<Process> processes = new ArrayList<>();
     private static final ExecutorService executor = Executors.newCachedThreadPool();
@@ -22,7 +20,7 @@ public class AgvSystemManager {
 
         System.out.println(BLUE + "=== AGV System Java Manager (Cross-Platform) ===" + RESET);
 
-        // 1. Parametrização
+        // parametrização
         System.out.print("Número de AGVs (default 3): ");
         String numAgvInput = sc.nextLine();
         int numAgvs = numAgvInput.isEmpty() ? 3 : Integer.parseInt(numAgvInput);
@@ -45,7 +43,7 @@ public class AgvSystemManager {
             }
         }
 
-        // 2. Setup de Execução
+        // Setup de Execução
         String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         
         // Tenta descobrir o caminho do próprio JAR ou o classpath atual
@@ -59,13 +57,13 @@ public class AgvSystemManager {
 
         System.out.println(GREEN + "Iniciando componentes..." + RESET);
 
-        // 3. Lançar Visualizador
+        // Executa Visualizador
         launch(javaBin, classpath, "br.usp.agv.bootstrap.VisualizerMain", "VISUALIZER", String.valueOf(gridW), String.valueOf(gridH));
 
-        // 4. Lançar Gerador (e preparar para enviar input)
+        // Executa Gerador
         Process generatorProcess = launch(javaBin, classpath, "br.usp.agv.bootstrap.OrderGeneratorMain", "GENERATOR", String.valueOf(gridW), String.valueOf(gridH));
         
-        // 5. Lançar AGV Nodes
+        // Dispara processos para cada AGV Node
         for (int i = 1; i <= numAgvs; i++) {
             String id = "AGV-" + i;
             String x, y;
@@ -84,10 +82,10 @@ public class AgvSystemManager {
         System.out.println(YELLOW + "Comandos disponíveis (ex: /random_orders 5, /new_order 0 0 10 10)" + RESET);
         System.out.println(YELLOW + "Digite 'exit' para encerrar o sistema.\n" + RESET);
 
-        // Adiciona um shutdown hook para limpar processos se o usuário der Ctrl+C no Manager
+        // Adiciona limpeza de processos se o usuário der Ctrl+C (evita processos fantasmas apos parar o orquestrador)
         Runtime.getRuntime().addShutdownHook(new Thread(AgvSystemManager::shutdown));
 
-        // 6. Loop de controle: Repassa input do console para o Gerador
+        // Loop de controle: input do console para o Gerador
         if (generatorProcess != null) {
             try (PrintWriter genIn = new PrintWriter(generatorProcess.getOutputStream(), true)) {
                 while (sc.hasNextLine()) {

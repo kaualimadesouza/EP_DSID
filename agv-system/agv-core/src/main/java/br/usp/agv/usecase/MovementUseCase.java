@@ -4,6 +4,7 @@ import br.usp.agv.model.*;
 
 import java.util.List;
 
+// Caso de uso que movimenta o AGV por sua rota a cada 300ms
 public class MovementUseCase {
 
     private final Agv agv;

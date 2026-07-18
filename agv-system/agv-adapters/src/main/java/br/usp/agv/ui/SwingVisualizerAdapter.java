@@ -15,9 +15,7 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Adaptador de Saída que renderiza o estado do sistema usando Swing com interpolação suave.
- */
+// Renderiza o estado do sistema usando Swing
 public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort {
 
     private final int rows;
@@ -26,9 +24,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     private final int offsetX = 45; 
     private final int offsetY = 45; 
     private final int statusWidth = 320;
-    
-    // Todo acesso a agvs/orders/activeRoutes é sincronizado em `this` (lock estável), nunca
-    // nos próprios campos ja que onSystemStateChanged reassina era agvs/orders para uma nova lista
+
     private List<Agv> agvs = new ArrayList<>();
     private List<Order> orders = new ArrayList<>();
     private final Map<String, br.usp.agv.model.Route> activeRoutes = new HashMap<>();
@@ -130,7 +126,6 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     private void updateStatusHtml() {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body style='font-family: sans-serif; padding: 10px; color: #2c3e50;'>");
-        
         sb.append("<div style='background-color: #34495e; color: white; padding: 10px; border-radius: 5px;'>");
         sb.append("<h2 style='margin: 0; font-size: 16px;'>Monitor de Sistema</h2>");
         sb.append("<span style='font-size: 10px; opacity: 0.8;'>Grade: ").append(rows).append("x").append(cols).append("</span>");
@@ -209,14 +204,14 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             boolean isOffline = agv.getStatus() == br.usp.agv.model.AgvStatus.OFFLINE;
             
             if (isLeader && !isOffline) {
-                // Desenha uma borda dourada / coroa de brilho
-                g.setColor(new Color(241, 196, 15, 80)); // Amarelo dourado semitransparente
+                // Desenha uma borda dourada
+                g.setColor(new Color(241, 196, 15, 80)); // Amarelo dourado
                 g.fillOval((int)p.x + 4, (int)p.y + 4, cellSize - 8, cellSize - 8);
             }
             
             // Desenha o corpo do AGV
             if (isOffline) {
-                g.setColor(new Color(189, 195, 199, 120)); // Cinza claro semi-transparente
+                g.setColor(new Color(189, 195, 199, 120)); // Cinza claro
             } else {
                 g.setColor(new Color(52, 152, 219)); 
             }
@@ -232,7 +227,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             g.setStroke(new BasicStroke(2));
             g.drawOval((int)p.x + 8, (int)p.y + 8, cellSize - 16, cellSize - 16);
             
-            // Desenha o "Nickname" acima do AGV (usa o nome estático curto para caber na tela)
+            // Desenha o nome acima do AGV (usa o nome estático curto para caber na tela)
             String id = br.usp.agv.model.Agv.getStaticNameFromId(agv.getAgvId());
             g.setFont(new Font("SansSerif", Font.BOLD, 11));
             FontMetrics fm = g.getFontMetrics();
@@ -278,7 +273,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 }
             }
 
-            g.setColor(new Color(41, 128, 185, 100)); // Cor azul semi-transparente uniforme para todas as rotas
+            g.setColor(new Color(41, 128, 185, 100)); // Cor azul para as rotas
             
             for (int i = startIndex; i < route.waypoints().size() - 1; i++) {
                 Position from = route.waypoints().get(i);
