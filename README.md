@@ -8,7 +8,7 @@ Este projeto foi desenvolvido para a disciplina de **Sistemas de Informação Di
 
 ## Documentação
 
-Mais detalhes em **[DOCUMENTACAO.md](./DOCUMENTACAO.md)** ou na forma de [slides](https://kaualimadesouza.github.io/EP_DSID).
+Mais detalhes em **[Especificacao_Grupo15.pdf](./Especificacao_Grupo15.pdf)**.
 
 ## Estrutura do Projeto
 
@@ -40,6 +40,11 @@ Ao iniciar, o programa perguntará interativamente:
 
 Após a inicialização, você pode digitar comandos diretamente no console para gerar pedidos:
 
-- `/random_orders <n>`: Gera *n* pedidos aleatórios.
-- `/new_order <px> <py> <dx> <dy>`: Cria um pedido específico (pickup -> delivery).
-- `exit`: Encerra todo o sistema e fecha os processos.
+| Comando | Descrição                                                                                                           |
+|---|---------------------------------------------------------------------------------------------------------------------|
+| `/random_orders <n>` | Gera *n* pedidos com origem/destino aleatórios                                                                      |
+| `/new_order <px> <py> <dx> <dy>` | Cria um pedido específico                                                                                           |
+| `/multi_order <p1x> <p1y> <d1x> <d1y> [...]` | Cria vários pedidos específicos de uma vez                                                                          |
+| `/dump` (ou `/mem`) | Pede que **todos** os AGVs ativos imprimam seu estado interno (líder atual, peers, filas); Utilizado para depuração |
+| `/clear` | Limpa a fila de retransmissão do gerador                                                                            |
+| `exit` / `quit` | Encerra todos os processos                                                                                          |

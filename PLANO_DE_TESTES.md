@@ -1,22 +1,18 @@
-# Plano de Teste Determinístico (Escopo Mínimo)
+# Plano de Teste
 
-Este plano permite validar de forma 100% determinística o funcionamento do sistema distribuído (algoritmo Bully, prevenção de colisões, atribuição por proximidade e recuperação de falhas) em um cenário reduzido e reprodutível.
+## Configuração
 
----
-
-## 🛠️ Configuração Inicial do Cenário
-
-1. Encerre qualquer processo Java residual:
+1. Encerrar processos pendentes:
    ```bash
    killall -9 java
    ```
 
-2. Inicie o sistema gerenciador:
+2. Iniciar o programa:
    ```bash
    java -jar infra/target/agv-system-all.jar
    ```
 
-3. Configure os seguintes valores interativos no console do Manager:
+3. Configurar os parametros:
    * **Número de AGVs**: `2`
    * **Largura do Grid**: `5`
    * **Altura do Grid**: `5`
@@ -26,7 +22,7 @@ Este plano permite validar de forma 100% determinística o funcionamento do sist
 
 ---
 
-## 🧪 Caso de Teste 1: Atribuição por Proximidade e Concorrência
+## Caso 1: Proximidade e Concorrência
 
 Este teste garante que as ordens são delegadas para o robô fisicamente mais próximo e que ambos executam tarefas concorrentemente.
 
@@ -45,7 +41,7 @@ Este teste garante que as ordens são delegadas para o robô fisicamente mais pr
 
 ---
 
-## 🧪 Caso de Teste 2: Prevenção de Colisão e Exclusão Mútua
+## Caso 2: Prevenção de Colisão e Exclusão Mútua (NAO IMPLEMENTADO)
 
 Este teste valida se o planejador de rotas evita colisões de forma segura quando os caminhos dos dois robôs se cruzam no centro do grid.
 
@@ -65,9 +61,9 @@ Este teste valida se o planejador de rotas evita colisões de forma segura quand
 
 ---
 
-## 🧪 Caso de Teste 3: Tolerância a Falhas e Recuperação de Órfãos
+## Caso 3: Tolerância a Falhas e Recuperação
 
-Este teste valida a eleição automática do algoritmo Bully e a recuperação de tarefas inacabadas quando um líder ativo cai durante a entrega.
+Este teste valida a eleição automática e a recuperação de tarefas inacabadas quando um líder cai durante a entrega.
 
 ### Passos:
 1. Identifique qual robô assumiu a liderança (exibido na barra superior ou na lateral como `Líder Ativo: AGV-X`). Suponha para este exemplo que o líder ativo seja o **AGV-2**.
