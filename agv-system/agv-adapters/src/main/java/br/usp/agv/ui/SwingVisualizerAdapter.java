@@ -27,6 +27,8 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     private final int offsetY = 45; 
     private final int statusWidth = 320;
     
+    // Todo acesso a agvs/orders/activeRoutes é sincronizado em `this` (lock estável), nunca
+    // nos próprios campos ja que onSystemStateChanged reassina era agvs/orders para uma nova lista
     private List<Agv> agvs = new ArrayList<>();
     private List<Order> orders = new ArrayList<>();
     private final Map<String, br.usp.agv.model.Route> activeRoutes = new HashMap<>();
@@ -36,7 +38,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     private final JTextPane statusPane;
     private long lastStatusUpdate = 0;
-    private String activeLeaderId = null;
+    private volatile String activeLeaderId = null;
 
     public SwingVisualizerAdapter(int rows, int cols) {
         this.rows = rows;
@@ -55,13 +57,13 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 
                 drawGrid(g2);
-                synchronized (orders) {
+                synchronized (this) {
                     drawOrders(g2);
                 }
-                synchronized (activeRoutes) {
+                synchronized (this) {
                     drawRoutes(g2);
                 }
-                synchronized (agvs) {
+                synchronized (this) {
                     drawAgvs(g2);
                 }
             }
@@ -87,7 +89,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         
         Timer timer = new Timer(16, e -> {
             try {
-                synchronized (agvs) {
+                synchronized (this) {
                     updateVisualPositions();
                 }
                 
@@ -141,7 +143,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         sb.append("</div><br>");
         
         sb.append("<b style='font-size: 13px; color: #7f8c8d;'>AGVs ATIVOS</b><hr>");
-        synchronized (agvs) {
+        synchronized (this) {
             if (agvs.isEmpty()) {
                 sb.append("<i style='color: #bdc3c7;'>Aguardando conexão...</i>");
             }
@@ -174,7 +176,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         }
         
         sb.append("<br><b style='font-size: 13px; color: #7f8c8d;'>FILA DE PEDIDOS</b><hr>");
-        synchronized (orders) {
+        synchronized (this) {
             if (orders.isEmpty()) {
                 sb.append("<i style='color: #bdc3c7; font-size: 11px;'>Nenhum pedido pendente</i>");
             } else {
@@ -344,7 +346,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onOrderCreated(Order order) {
-        synchronized (orders) {
+        synchronized (this) {
             this.orders.add(order);
         }
         repaint();
@@ -352,7 +354,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onRouteCalculated(String agvId, br.usp.agv.model.Route route) {
-        synchronized (activeRoutes) {
+        synchronized (this) {
             this.activeRoutes.put(agvId, route);
         }
         repaint();
@@ -360,7 +362,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onRouteReleased(String agvId) {
-        synchronized (activeRoutes) {
+        synchronized (this) {
             this.activeRoutes.remove(agvId);
         }
         repaint();
@@ -368,7 +370,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onOrderCompleted(String orderId) {
-        synchronized (orders) {
+        synchronized (this) {
             this.orders.removeIf(o -> o.orderId().equals(orderId));
         }
         repaint();
@@ -376,10 +378,10 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
 
     @Override
     public void onSystemStateChanged(List<Agv> allAgvs, List<Order> pendingOrders) {
-        synchronized (agvs) {
+        synchronized (this) {
             this.agvs = new ArrayList<>(allAgvs);
         }
-        synchronized (orders) {
+        synchronized (this) {
             this.orders = new ArrayList<>(pendingOrders);
         }
         repaint();

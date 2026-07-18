@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Entra manualmente com pedidos por console -- com implementação de broker simulado
@@ -20,7 +21,11 @@ import java.util.concurrent.TimeUnit;
 public class OrderGeneratorMain {
     private static final Map<String, Order> activeOrders = new ConcurrentHashMap<>();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static int generatorSeq = 1;
+    // AtomicInteger: incrementado tanto pela thread principal (console) quanto pela thread
+    // de retransmissão agendada (scheduleAtFixedRate) — um simples "int" não thread-safe
+    // podia gerar dois envios com o MESMO número de sequência, fazendo o SRM do lado
+    // receptor descartar um deles como "duplicata" mesmo sendo um pedido diferente.
+    private static final AtomicInteger generatorSeq = new AtomicInteger(1);
     private static int gridWidth = 15;
     private static int gridHeight = 15;
 
@@ -78,7 +83,7 @@ public class OrderGeneratorMain {
                 System.out.println("Fila limpa.");
             } else if (input.startsWith("/dump") || input.startsWith("/mem")) {
                 java.util.Map<String, Object> payload = new java.util.HashMap<>();
-                network.broadcast(new br.usp.agv.model.AgvMessage("GENERATOR", generatorSeq++, 0, br.usp.agv.model.MessageType.DEBUG_QUERY, payload));
+                network.broadcast(new br.usp.agv.model.AgvMessage("GENERATOR", generatorSeq.getAndIncrement(), 0, br.usp.agv.model.MessageType.DEBUG_QUERY, payload));
                 System.out.println("[GENERATOR] Solicitando dump de memória para todos os AGVs ativos...");
             }
             System.out.print("> ");
@@ -149,7 +154,7 @@ public class OrderGeneratorMain {
         payload.put("pickup", order.pickup());
         payload.put("delivery", order.delivery());
 
-        AgvMessage orderMsg = new AgvMessage("GENERATOR", generatorSeq++, 0, MessageType.NEW_ORDER, payload);
+        AgvMessage orderMsg = new AgvMessage("GENERATOR", generatorSeq.getAndIncrement(), 0, MessageType.NEW_ORDER, payload);
         network.broadcast(orderMsg);
     }
 }

@@ -90,7 +90,11 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
         try {
             toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), routeObstacles, agv.getAgvId());
         } catch (Exception e) {
-            // Fallback se estiver bloqueado pelas rotas ativas: calcula sem obstáculos dinâmicos
+            // Fallback se estiver bloqueado pelas rotas ativas: calcula sem obstáculos dinâmicos.
+            // Isso é aceitar um risco pequeno de esbarrão em vez de travar o pedido para sempre —
+            // registrar aqui é o que permite perceber (e explicar) quando isso está acontecendo.
+            br.usp.agv.logging.SystemLogger.info("ROTA", "Bloqueado por rotas ativas de outros AGVs ao ir para o pickup de "
+                    + order.orderId() + " — recalculando sem desviar deles.", true);
             toPickup = pathfinder.calculateRoute(agv.getCurrentPosition(), order.pickup(), java.util.Set.of(), agv.getAgvId());
         }
 
@@ -98,6 +102,8 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
         try {
             toDelivery = pathfinder.calculateRoute(order.pickup(), order.delivery(), routeObstacles, agv.getAgvId());
         } catch (Exception e) {
+            br.usp.agv.logging.SystemLogger.info("ROTA", "Bloqueado por rotas ativas de outros AGVs ao ir para o delivery de "
+                    + order.orderId() + " — recalculando sem desviar deles.", true);
             toDelivery = pathfinder.calculateRoute(order.pickup(), order.delivery(), java.util.Set.of(), agv.getAgvId());
         }
 
@@ -131,8 +137,8 @@ public class AgvController implements br.usp.agv.ports.inbound.AgvController, Ba
     @Override
     public void onOrderCompleted(String orderId) {
         batchAssignment.onOrderCompleted(orderId);
-        // Também limpa qualquer rota associada ao pedido que concluiu
-        activePeerRoutes.values().removeIf(route -> route.routeId().contains(orderId));
+        // A limpeza da rota do robô que concluiu já acontece via onRouteReleased
+        // (Route não carrega o orderId, então não dá pra filtrar por ele aqui).
         if (observer != null) {
             observer.onOrderCompleted(orderId);
         }
