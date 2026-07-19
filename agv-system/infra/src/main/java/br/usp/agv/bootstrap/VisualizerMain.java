@@ -13,10 +13,10 @@ public class VisualizerMain {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static void main(String[] args) {
-        int cols = args.length > 1 ? Integer.parseInt(args[0]) : 15;
-        int rows = args.length > 1 ? Integer.parseInt(args[1]) : 15;
+        int width = args.length > 1 ? Integer.parseInt(args[0]) : 15;
+        int height = args.length > 1 ? Integer.parseInt(args[1]) : 15;
 
-        SwingVisualizerAdapter ui = new SwingVisualizerAdapter(rows, cols);
+        SwingVisualizerAdapter ui = new SwingVisualizerAdapter(width, height);
         UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
         Map<String, Agv> knownAgvs = new ConcurrentHashMap<>();

@@ -20,14 +20,14 @@ import java.util.List;
 // Simulador Local que cria múltiplos AGVs no mesmo processo usando comunicação em memória ao invés de rede
 public class SimulationMain {
     public static void main(String[] args) {
-        int rows = 15;
-        int cols = 15;
+        int width = 15;
+        int height = 15;
 
         // Infraestrutura Compartilhada
-        GridGraphAdapter world = new GridGraphAdapter(rows, cols, Collections.emptySet());
+        GridGraphAdapter world = new GridGraphAdapter(width, height, Collections.emptySet());
         AStarPathfinderAdapter pathfinder = new AStarPathfinderAdapter(world);
         InMemoryMessageBus sharedBus = new InMemoryMessageBus();
-        SwingVisualizerAdapter ui = new SwingVisualizerAdapter(rows, cols);
+        SwingVisualizerAdapter ui = new SwingVisualizerAdapter(width, height);
 
         // Criação dos AGVs (Nós locais)
         List<Agv> agvModels = new ArrayList<>();
@@ -37,10 +37,10 @@ public class SimulationMain {
         controllers.add(createAgv("Alpha", new Position(2, 2), pathfinder, sharedBus, ui, agvModels));
 
         // AGV Beta (Inicia no canto inferior esquerdo)
-        controllers.add(createAgv("Beta", new Position(12, 2), pathfinder, sharedBus, ui, agvModels));
+        controllers.add(createAgv("Beta", new Position(2, 12), pathfinder, sharedBus, ui, agvModels));
         
         // AGV Gamma (Inicia no centro-direita)
-        controllers.add(createAgv("Gamma", new Position(7, 12), pathfinder, sharedBus, ui, agvModels));
+        controllers.add(createAgv("Gamma", new Position(12, 7), pathfinder, sharedBus, ui, agvModels));
 
         // 3. Estado inicial na UI
         ui.onSystemStateChanged(agvModels, Collections.emptyList());
@@ -52,7 +52,7 @@ public class SimulationMain {
         new Thread(() -> {
             try {
                 Thread.sleep(12000);
-                Order order = new Order("ORD-TEST-001", new Position(7, 7), new Position(0, 14));
+                Order order = new Order("ORD-TEST-001", new Position(7, 7), new Position(14, 0));
                 System.out.println("\n[EVENTO] Novo Pedido Criado no Centro do Grid!");
                 
                 // Em um sistema real, o Broker enviaria isso. Aqui, notificamos todos.

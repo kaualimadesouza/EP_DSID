@@ -119,7 +119,7 @@ public class OrderGeneratorMain {
             }
             int n = Integer.parseInt(parts[1]);
             for (int i = 0; i < n; i++) {
-                createAndSendOrder(network, rand.nextInt(gridHeight), rand.nextInt(gridWidth), rand.nextInt(gridHeight), rand.nextInt(gridWidth));
+                createAndSendOrder(network, rand.nextInt(gridWidth), rand.nextInt(gridHeight), rand.nextInt(gridWidth), rand.nextInt(gridHeight));
             }
         } catch (Exception e) {
             System.out.println("Erro: " + e.getMessage());

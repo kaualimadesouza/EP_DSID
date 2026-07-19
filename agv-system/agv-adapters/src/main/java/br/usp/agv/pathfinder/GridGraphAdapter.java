@@ -13,13 +13,13 @@ import java.util.Set;
  */
 public class GridGraphAdapter implements WorldMapPort {
 
-    private final int rows;
-    private final int cols;
+    private final int width;
+    private final int height;
     private final Set<Position> staticObstacles;
 
-    public GridGraphAdapter(int rows, int cols, Set<Position> staticObstacles) {
-        this.rows = rows;
-        this.cols = cols;
+    public GridGraphAdapter(int width, int height, Set<Position> staticObstacles) {
+        this.width = width;
+        this.height = height;
         this.staticObstacles = staticObstacles;
     }
 
@@ -29,9 +29,9 @@ public class GridGraphAdapter implements WorldMapPort {
         Graph<Position, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
 
         // adiciona vértices: todas as células navegáveis
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                Position pos = new Position(row, col);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                Position pos = new Position(x, y);
                 if (!staticObstacles.contains(pos) && !dynamicObstacles.contains(pos)) {
                     graph.addVertex(pos);
                 }
@@ -51,8 +51,8 @@ public class GridGraphAdapter implements WorldMapPort {
     }
 
     public boolean inBounds(Position p) {
-        return p.x() >= 0 && p.x() < rows
-                && p.y() >= 0 && p.y() < cols;
+        return p.x() >= 0 && p.x() < width
+                && p.y() >= 0 && p.y() < height;
     }
 
     @Override

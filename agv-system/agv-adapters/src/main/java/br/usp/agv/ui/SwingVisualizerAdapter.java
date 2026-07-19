@@ -18,8 +18,8 @@ import java.util.Map;
 // Renderiza o estado do sistema usando Swing
 public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort {
 
-    private final int rows;
-    private final int cols;
+    private final int width;
+    private final int height;
     private final int cellSize = 40;
     private final int offsetX = 45; 
     private final int offsetY = 45; 
@@ -36,9 +36,9 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     private long lastStatusUpdate = 0;
     private volatile String activeLeaderId = null;
 
-    public SwingVisualizerAdapter(int rows, int cols) {
-        this.rows = rows;
-        this.cols = cols;
+    public SwingVisualizerAdapter(int width, int height) {
+        this.width = width;
+        this.height = height;
         
         setTitle("Sistema de AGVs - USP DSID");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -65,7 +65,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             }
         };
         gridPanel.setBackground(Color.WHITE);
-        gridPanel.setPreferredSize(new Dimension(cols * cellSize + offsetX + 30, rows * cellSize + offsetY + 30));
+        gridPanel.setPreferredSize(new Dimension(width * cellSize + offsetX + 30, height * cellSize + offsetY + 30));
         
         statusPane = new JTextPane();
         statusPane.setEditable(false);
@@ -112,8 +112,8 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
             Position target = agv.getCurrentPosition();
             if (target == null) continue;
             
-            double targetX = target.y() * cellSize + offsetX;
-            double targetY = target.x() * cellSize + offsetY;
+            double targetX = target.x() * cellSize + offsetX;
+            double targetY = target.y() * cellSize + offsetY;
             
             Point2D.Double current = visualPositions.computeIfAbsent(id, 
                 k -> new Point2D.Double(targetX, targetY));
@@ -128,7 +128,7 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         sb.append("<html><body style='font-family: sans-serif; padding: 10px; color: #2c3e50;'>");
         sb.append("<div style='background-color: #34495e; color: white; padding: 10px; border-radius: 5px;'>");
         sb.append("<h2 style='margin: 0; font-size: 16px;'>Monitor de Sistema</h2>");
-        sb.append("<span style='font-size: 10px; opacity: 0.8;'>Grade: ").append(rows).append("x").append(cols).append("</span>");
+        sb.append("<span style='font-size: 10px; opacity: 0.8;'>Grade: ").append(width).append("x").append(height).append("</span>");
         if (activeLeaderId != null) {
             String leaderName = br.usp.agv.model.Agv.getStaticNameFromId(activeLeaderId);
             sb.append("<br><span style='font-size: 11px; color: #f1c40f;'>Líder Ativo: <b>").append(leaderName).append("</b></span>");
@@ -279,8 +279,8 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
                 Position from = route.waypoints().get(i);
                 Position to = route.waypoints().get(i + 1);
                 g.drawLine(
-                    from.y() * cellSize + cellSize / 2 + offsetX, from.x() * cellSize + cellSize / 2 + offsetY,
-                    to.y() * cellSize + cellSize / 2 + offsetX, to.x() * cellSize + cellSize / 2 + offsetY
+                    from.x() * cellSize + cellSize / 2 + offsetX, from.y() * cellSize + cellSize / 2 + offsetY,
+                    to.x() * cellSize + cellSize / 2 + offsetX, to.y() * cellSize + cellSize / 2 + offsetY
                 );
             }
         }
@@ -289,25 +289,25 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
     private void drawGrid(Graphics2D g) {
         g.setFont(new Font("Monospaced", Font.BOLD, 12));
         
-        for (int i = 0; i <= rows; i++) {
-            int y = i * cellSize + offsetY;
+        for (int j = 0; j <= height; j++) {
+            int y = j * cellSize + offsetY;
             g.setColor(new Color(235, 235, 235));
-            g.drawLine(offsetX, y, cols * cellSize + offsetX, y);
+            g.drawLine(offsetX, y, width * cellSize + offsetX, y);
             
-            if (i < rows) {
+            if (j < height) {
                 g.setColor(new Color(127, 140, 141));
-                g.drawString(String.format("%2d", i), offsetX - 30, y + cellSize / 2 + 5);
+                g.drawString(String.format("%2d", j), offsetX - 30, y + cellSize / 2 + 5);
             }
         }
         
-        for (int j = 0; j <= cols; j++) {
-            int x = j * cellSize + offsetX;
+        for (int i = 0; i <= width; i++) {
+            int x = i * cellSize + offsetX;
             g.setColor(new Color(235, 235, 235));
-            g.drawLine(x, offsetY, x, rows * cellSize + offsetY);
+            g.drawLine(x, offsetY, x, height * cellSize + offsetY);
             
-            if (j < cols) {
+            if (i < width) {
                 g.setColor(new Color(127, 140, 141));
-                g.drawString(String.valueOf(j), x + cellSize / 2 - 5, offsetY - 15);
+                g.drawString(String.valueOf(i), x + cellSize / 2 - 5, offsetY - 15);
             }
         }
     }
@@ -316,16 +316,16 @@ public class SwingVisualizerAdapter extends JFrame implements WorldObserverPort 
         for (Order order : orders) {
             g.setColor(new Color(46, 204, 113, 150));
             Position p = order.pickup();
-            int px = p.y() * cellSize + 10 + offsetX;
-            int py = p.x() * cellSize + 10 + offsetY;
+            int px = p.x() * cellSize + 10 + offsetX;
+            int py = p.y() * cellSize + 10 + offsetY;
             g.fillOval(px, py, cellSize - 20, cellSize - 20);
             g.setColor(new Color(39, 174, 96));
             g.drawOval(px, py, cellSize - 20, cellSize - 20);
             
             g.setColor(new Color(231, 76, 60));
             Position d = order.delivery();
-            int dx = d.y() * cellSize + 8 + offsetX;
-            int dy = d.x() * cellSize + 8 + offsetY;
+            int dx = d.x() * cellSize + 8 + offsetX;
+            int dy = d.y() * cellSize + 8 + offsetY;
             int size = cellSize - 16;
             g.setStroke(new BasicStroke(2));
             g.drawRect(dx, dy, size, size);

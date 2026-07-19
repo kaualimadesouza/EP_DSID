@@ -72,8 +72,8 @@ public class AgvSystemManager {
                 x = parts[0].trim();
                 y = parts[1].trim();
             } else {
-                x = String.valueOf(i - 1);
-                y = "0";
+                x = String.valueOf((i - 1) % gridW);
+                y = String.valueOf(((i - 1) / gridW) % gridH);
             }
             launch(javaBin, classpath, "br.usp.agv.bootstrap.AgvNodeMain", id, id, x, y, String.valueOf(gridW), String.valueOf(gridH));
         }
