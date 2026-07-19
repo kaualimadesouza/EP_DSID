@@ -46,7 +46,7 @@ Referência rápida do que cada arquivo faz no projeto.
 
 **`AgvController.java`** (implementação) - Ponto de entrada único para tudo que chega da rede: a maioria dos métodos só repassa para `BatchAssignmentUseCase` ou `MovementUseCase`, mas também guarda as rotas ativas de outros AGVs (`activePeerRoutes`) para calcular a própria rota evitando cruzar com elas.
 
-**`BatchAssignmentUseCase.java`** - Eleição de líder (Bully), agrupamento de pedidos em lotes, cálculo do vencedor do leilão por distância de Manhattan, monitoramento de peers vivos/mortos, modo Fail-Safe, e recuperação de tarefas órfãs quando um AGV cai.
+**`BatchAssignmentUseCase.java`** - Eleição de líder (Bully), agrupamento de pedidos em lotes, cálculo do vencedor do leilão por distância de Manhattan, monitoramento de peers vivos/mortos, modo Fail-Safe, recuperação de tarefas órfãs quando um AGV cai, retenção de pedidos excedentes em memória e re-coordenação automática baseada na disponibilidade dos AGVs.
 
 **`MovementUseCase.java`** - Executa a rota já atribuída a um pedido: percorre os waypoints, pausa se o AGV estiver em `FAIL_SAFE`, manda heartbeat a cada passo, e avisa quando o pedido é concluído.
 
@@ -70,7 +70,7 @@ Referência rápida do que cada arquivo faz no projeto.
 
 **`GridGraphAdapter.java`** - Constrói o grid do armazém como um grafo (JGraphT), célula por célula, ligando só vizinhos ortogonais e excluindo obstáculos estáticos e dinâmicos.
 
-**`AStarPathfinderAdapter.java`** - Calcula a rota mais curta entre dois pontos usando A* com heurística de distância de Manhattan.
+**`AStarPathfinderAdapter.java`** - Calcula a rota mais curta entre dois pontos usando A\* com heurística de distância de Manhattan.
 
 ### `ui/`
 
@@ -88,12 +88,12 @@ Referência rápida do que cada arquivo faz no projeto.
 
 ## `infra` - pontos de entrada e orquestração
 
-**`AgvNodeMain.java`** - O `main` de **um** AGV. Monta manualmente todas as peças (mensageria, pathfinder, use cases, controller) e mantém o processo vivo.
+**`AgvNodeMain.java`** - O `main` de um AGV. Monta manualmente todas as peças (mensageria, pathfinder, use cases, controller) e mantém o processo vivo.
 
 **`OrderGeneratorMain.java`** - O `main` do Gerador de Pedidos: lê comandos do console (`/new_order`, `/random_orders`, `/dump`...) e faz broadcast de `NEW_ORDER`/`DEBUG_QUERY`.
 
 **`VisualizerMain.java`** - O `main` do Visualizador: renderiza o estado do sistema a partir das mensagens públicas.
 
-**`SimulationMain.java`** - modo de teste rápido sobe 3 AGVs na mesma JVM usando `InMemoryMessageBus`   , para testar a lógica rapidamente.
+**`SimulationMain.java`** - modo de teste rápido sobe 3 AGVs na mesma JVM usando `InMemoryMessageBus` , para testar a lógica rapidamente.
 
 **`AgvSystemManager.java`** - O orquestrador principal que criamos para facilitar a execução do EP, quantos AGVs/tamanho de grid, sobe o Visualizador, o Gerador e cada AGV como processos separados do sistema operacional, e repassa o que você digita no console para o Gerador.

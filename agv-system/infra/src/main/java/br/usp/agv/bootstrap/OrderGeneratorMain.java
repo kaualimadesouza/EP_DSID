@@ -10,20 +10,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 // Entra manualmente com pedidos por console
 public class OrderGeneratorMain {
-    private static final Map<String, Order> activeOrders = new ConcurrentHashMap<>();
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    // AtomicInteger: incrementado tanto pela thread principal (console) quanto pela thread
-    // de retransmissão agendada, pois um simples "int" não thread-safe
-    // poderia gerar dois envios com o MESMO número de sequência, fazendo o SRM do lado
-    // receptor descartar um deles mesmo sendo um pedido diferente.
-    private static final AtomicInteger generatorSeq = new AtomicInteger(1);
+    private static int generatorSeq = 1;
     private static int gridWidth = 15;
     private static int gridHeight = 15;
 
@@ -35,17 +26,7 @@ public class OrderGeneratorMain {
             } catch (NumberFormatException ignored) {}
         }
 
-        UdpMessageBusAdapter network = getUdpMessageBusAdapter();
-
-        // Thread de re-transmissão
-        scheduler.scheduleAtFixedRate(() -> {
-            if (activeOrders.isEmpty()) return;
-            
-            for (Order order : activeOrders.values()) {
-                // Removemos o log periódico por pedido para não sujar o terminal
-                sendOrderMsg(network, order, false);
-            }
-        }, 10, 10, TimeUnit.SECONDS);
+        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
 
         System.out.println("Gerador de pedidos iniciado.");
         System.out.println("Use: /new_order <px> <py> <dx> <dy>");
@@ -65,31 +46,13 @@ public class OrderGeneratorMain {
                 handleMultiOrder(network, input);
             } else if (input.startsWith("/random_orders")) {
                 handleRandomOrders(network, input, random);
-            } else if (input.startsWith("/clear")) {
-                activeOrders.clear();
-                System.out.println("Fila limpa.");
             } else if (input.startsWith("/dump") || input.startsWith("/mem")) {
                 java.util.Map<String, Object> payload = new java.util.HashMap<>();
-                network.broadcast(new br.usp.agv.model.AgvMessage("GENERATOR", generatorSeq.getAndIncrement(), 0, br.usp.agv.model.MessageType.DEBUG_QUERY, payload));
+                network.broadcast(new br.usp.agv.model.AgvMessage("GENERATOR", generatorSeq++, 0, br.usp.agv.model.MessageType.DEBUG_QUERY, payload));
                 System.out.println("[GENERATOR] Solicitando dump de memória para todos os AGVs ativos...");
             }
             System.out.print("> ");
         }
-    }
-
-    private static UdpMessageBusAdapter getUdpMessageBusAdapter() {
-        UdpMessageBusAdapter network = new UdpMessageBusAdapter();
-
-        // Listener para remover pedidos concluídos (atribuídos)
-        network.subscribe("agv-system", message -> {
-            if (message.type() == MessageType.ROUTE_CLAIMED) {
-                String orderId = (String) message.payload().get("orderId");
-                if (orderId != null && activeOrders.remove(orderId) != null) {
-                    System.out.println("\n[GENERATOR] Pedido " + orderId + " confirmado e removido da fila de retransmissão.");
-                }
-            }
-        });
-        return network;
     }
 
     private static void handleMultiOrder(UdpMessageBusAdapter network, String input) {
@@ -142,7 +105,6 @@ public class OrderGeneratorMain {
 
     private static void createAndSendOrder(UdpMessageBusAdapter network, int px, int py, int dx, int dy) {
         Order order = new Order("ORD-" + System.nanoTime(), new Position(px, py), new Position(dx, dy));
-        activeOrders.put(order.orderId(), order);
         sendOrderMsg(network, order, true);
     }
 
@@ -156,7 +118,7 @@ public class OrderGeneratorMain {
         payload.put("pickup", order.pickup());
         payload.put("delivery", order.delivery());
 
-        AgvMessage orderMsg = new AgvMessage("GENERATOR", generatorSeq.getAndIncrement(), 0, MessageType.NEW_ORDER, payload);
+        AgvMessage orderMsg = new AgvMessage("GENERATOR", generatorSeq++, 0, MessageType.NEW_ORDER, payload);
         network.broadcast(orderMsg);
     }
 }

@@ -40,11 +40,10 @@ Ao iniciar, o programa perguntará interativamente:
 
 Após a inicialização, você pode digitar comandos diretamente no console para gerar pedidos:
 
-| Comando | Descrição                                                                                                           |
-|---|---------------------------------------------------------------------------------------------------------------------|
-| `/random_orders <n>` | Gera *n* pedidos com origem/destino aleatórios                                                                      |
-| `/new_order <px> <py> <dx> <dy>` | Cria um pedido específico                                                                                           |
-| `/multi_order <p1x> <p1y> <d1x> <d1y> [...]` | Cria vários pedidos específicos de uma vez                                                                          |
-| `/dump` (ou `/mem`) | Pede que **todos** os AGVs ativos imprimam seu estado interno (líder atual, peers, filas); Utilizado para depuração |
-| `/clear` | Limpa a fila de retransmissão do gerador                                                                            |
-| `exit` / `quit` | Encerra todos os processos                                                                                          |
+| Comando                                      | Descrição                                                                                                       |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `/random_orders <n>`                         | Gera _n_ pedidos com origem/destino aleatórios                                                                  |
+| `/new_order <px> <py> <dx> <dy>`             | Cria um pedido específico                                                                                       |
+| `/multi_order <p1x> <p1y> <d1x> <d1y> [...]` | Cria vários pedidos específicos de uma vez                                                                      |
+| `/dump` (ou `/mem`)                          | Pede que todos os AGVs ativos imprimam seu estado interno (líder atual, peers, filas); Utilizado para depuração |
+| `exit` / `quit`                              | Encerra todos os processos                                                                                      |
